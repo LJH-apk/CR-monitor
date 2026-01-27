@@ -1,0 +1,21 @@
+CREATE TABLE videos (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    original_filename VARCHAR(255) NOT NULL,
+    stored_filename VARCHAR(255) NOT NULL,
+    file_size BIGINT,
+    duration INT,
+    status VARCHAR(20) DEFAULT 'UPLOADING',
+    original_path VARCHAR(500),
+    hls_path VARCHAR(500),
+    thumbnail_path VARCHAR(500),
+    upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    transcoding_started_at TIMESTAMP NULL,
+    transcoding_completed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_upload_time (upload_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

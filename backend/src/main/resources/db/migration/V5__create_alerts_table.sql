@@ -1,0 +1,22 @@
+CREATE TABLE alerts (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    video_id BIGINT NOT NULL,
+    danger_behavior_id BIGINT NOT NULL,
+    timestamp_in_video INT NOT NULL,
+    confidence DECIMAL(5,2),
+    severity_level INT NOT NULL,
+    description TEXT,
+    frame_snapshot_path VARCHAR(500),
+    is_acknowledged BOOLEAN DEFAULT FALSE,
+    acknowledged_by BIGINT NULL,
+    acknowledged_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
+    FOREIGN KEY (danger_behavior_id) REFERENCES danger_behaviors(id),
+    FOREIGN KEY (acknowledged_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_video_id (video_id),
+    INDEX idx_behavior_id (danger_behavior_id),
+    INDEX idx_created_at (created_at),
+    INDEX idx_severity (severity_level),
+    INDEX idx_acknowledged (is_acknowledged)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

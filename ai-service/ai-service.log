@@ -1,0 +1,21 @@
+2026-01-27 19:33:16,981 - __main__ - INFO - 正在初始化AI模型...
+2026-01-27 19:33:16,981 - models.yolo_detector - INFO - 从 yolo11n.pt 加载YOLO模型
+2026-01-27 19:33:17,003 - models.yolo_detector - INFO - YOLO模型加载成功: yolo11n.pt
+2026-01-27 19:33:17,056 - models.yolo_detector - INFO - 模型测试成功，可以正常进行检测
+2026-01-27 19:33:17,056 - services.detection_service - INFO - 检测服务初始化完成
+2026-01-27 19:33:17,056 - __main__ - INFO - AI模型初始化成功
+2026-01-27 19:33:17,056 - __main__ - INFO - 启动AI检测服务，监听 0.0.0.0:5001
+ * Serving Flask app 'app'
+ * Debug mode: off
+2026-01-27 19:33:18,955 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.0.35:5001
+2026-01-27 19:33:18,955 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-01-27 19:33:44,898 - werkzeug - INFO - 127.0.0.1 - - [27/Jan/2026 19:33:44] "GET /api/health HTTP/1.1" 200 -
+2026-01-27 19:34:31,624 - __main__ - INFO - 收到检测请求，置信度阈值: 0.5, 精细检测阈值: 0.6
+2026-01-27 19:34:31,637 - services.detection_service - INFO - 图像解码成功，尺寸: (600, 400, 3)
+2026-01-27 19:34:31,700 - services.detection_service - INFO - YOLO检测到 0 个人物
+2026-01-27 19:34:31,701 - services.detection_service - INFO - 完成分析，共 0 个结果
+2026-01-27 19:34:31,701 - __main__ - INFO - 检测完成，返回 0 个结果
+2026-01-27 19:34:31,701 - werkzeug - INFO - 127.0.0.1 - - [27/Jan/2026 19:34:31] "POST /api/detect HTTP/1.1" 200 -

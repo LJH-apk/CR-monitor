@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(java:*)",
+      "Bash(mvn -version)",
+      "Bash(mysql:*)",
+      "Bash(redis-cli:*)",
+      "Bash(ffmpeg -version)",
+      "Bash(brew install:*)",
+      "Bash(export JAVA_HOME=/opt/homebrew/opt/openjdk@17)",
+      "Bash(export PATH=\"$JAVA_HOME/bin:$PATH\")",
+      "Bash(brew services list:*)",
+      "Bash(lsof:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(kill:*)",
+      "Bash(xargs kill:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(source venv/bin/activate)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(echo:*)",
+      "Bash(export JAVA_HOME=/Library/Java/JavaVirtualMachines/microsoft-17.jdk/Contents/Home)",
+      "Bash(export PATH=$JAVA_HOME/bin:$PATH)",
+      "Bash(/usr/libexec/java_home:*)",
+      "Bash(npm run dev)",
+      "Bash(mvn compile:*)",
+      "Bash(npm run type-check)",
+      "Bash(npm run 2:*)",
+      "Bash(mvn clean:*)"
+    ]
+  }
+}

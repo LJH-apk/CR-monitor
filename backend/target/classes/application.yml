@@ -1,0 +1,89 @@
+spring:
+  application:
+    name: security-monitor
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/security_monitor
+    username: root
+    password: rootroot
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    jedis:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+        max-wait: 2000ms
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# JWT Configuration
+jwt:
+  secret: your-secret-key-change-this-in-production-with-at-least-256-bits
+  expiration: 86400000  # 24 hours in milliseconds
+
+# Storage Configuration
+storage:
+  base-path: ./storage
+  uploads: ${storage.base-path}/uploads
+  transcoded: ${storage.base-path}/transcoded
+  thumbnails: ${storage.base-path}/thumbnails
+
+# FFmpeg Configuration
+ffmpeg:
+  path: ffmpeg
+  hls-time: 10  # seconds per segment
+  preset: medium  # ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
+
+# AI Service Configuration
+ai-service:
+  base-url: http://localhost:5001
+  timeout: 30000  # 30 seconds
+  enabled: true
+
+# Frame Extraction Configuration
+frame-extraction:
+  interval: 30  # extract 1 frame every 30 frames
+  min-interval-seconds: 2  # minimum time interval between analyses
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.security.monitor: DEBUG
+    org.springframework.security: DEBUG
