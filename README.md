@@ -2,15 +2,15 @@
 
 <div align="center">
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Java](https://img.shields.io/badge/Java-17-orange.svg)
+![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-blue.svg)
+![Java](https://img.shields.io/badge/Java-18-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.1-brightgreen.svg)
 ![Vue](https://img.shields.io/badge/Vue-3-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)
 
 一个基于AI的全栈视频监控平台，具备实时危险检测和智能预警功能
 
-[功能特性](#功能特性) • [快速开始](#快速开始) • [技术栈](#技术栈) • [系统架构](#系统架构) • [使用指南](#使用指南)
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [技术栈](#-技术栈) • [系统架构](#-系统架构) • [使用指南](#-使用指南)
 
 </div>
 
@@ -38,6 +38,14 @@
 ## 🎯 项目简介
 
 智能安全监控系统是一个现代化的视频监控解决方案，集成了AI驱动的危险行为检测功能。系统能够实时分析视频内容，自动识别潜在的安全威胁（如打架、摔倒、非法入侵等），并通过WebSocket实时推送预警信息。
+
+> **⚠️ 重要声明**
+>
+> 本项目采用 **CC BY-NC 4.0 许可协议**：
+> - ✅ 允许个人学习、研究和非商业使用
+> - ❌ 禁止任何形式的商业使用
+> - 📝 使用时必须保留作者署名
+> - 💼 如需商业授权，请联系作者
 
 ### 核心亮点
 
@@ -734,7 +742,34 @@ java -version
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
+本项目采用 **CC BY-NC 4.0（知识共享署名-非商业性使用 4.0 国际许可协议）**。
+
+### 许可说明
+
+✅ **允许**：
+- 个人学习和研究使用
+- 教育和学术用途
+- 非营利组织使用
+- 分享和传播（需署名）
+- 修改和演绎（需署名）
+
+❌ **禁止**：
+- 商业用途（包括但不限于销售、商业服务、商业推广）
+- 未经授权的商业部署
+- 移除或修改作者署名信息
+
+### 署名要求
+
+使用本项目时，必须：
+1. 保留原作者署名信息
+2. 提供指向本项目的链接
+3. 注明是否对原作品进行了修改
+
+### 商业授权
+
+如需商业使用，请联系作者获取商业授权许可。
+
+详细许可条款请参阅：[CC BY-NC 4.0 协议全文](https://creativecommons.org/licenses/by-nc/4.0/deed.zh)
 
 ---
 
