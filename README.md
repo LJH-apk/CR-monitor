@@ -305,56 +305,155 @@ npm run dev
 
 ```
 Page/
-├── backend/                    # 后端项目
+├── backend/                              # Spring Boot 后端服务
 │   ├── src/
 │   │   ├── main/
-│   │   │   ├── java/
-│   │   │   │   └── com/security/monitor/
-│   │   │   │       ├── config/          # 配置类
-│   │   │   │       ├── controller/      # 控制器
-│   │   │   │       ├── dto/             # 数据传输对象
-│   │   │   │       ├── entity/          # 实体类
-│   │   │   │       ├── repository/      # 数据访问层
-│   │   │   │       ├── service/         # 业务逻辑层
-│   │   │   │       └── util/            # 工具类
+│   │   │   ├── java/com/security/monitor/
+│   │   │   │   ├── SecurityMonitorApplication.java  # 应用入口
+│   │   │   │   ├── config/                          # 配置类
+│   │   │   │   │   ├── AsyncConfig.java            # 异步任务配置
+│   │   │   │   │   ├── CorsConfig.java             # 跨域配置
+│   │   │   │   │   ├── JwtAuthenticationFilter.java # JWT过滤器
+│   │   │   │   │   ├── RedisConfig.java            # Redis配置
+│   │   │   │   │   ├── SecurityConfig.java         # 安全配置
+│   │   │   │   │   ├── WebConfig.java              # Web配置
+│   │   │   │   │   └── WebSocketConfig.java        # WebSocket配置
+│   │   │   │   ├── controller/                      # REST控制器
+│   │   │   │   │   ├── AlertController.java        # 告警管理
+│   │   │   │   │   ├── AuthController.java         # 认证登录
+│   │   │   │   │   ├── DangerBehaviorController.java # 危险行为
+│   │   │   │   │   ├── DashboardController.java    # 仪表盘
+│   │   │   │   │   ├── ThresholdController.java    # 阈值配置
+│   │   │   │   │   ├── TrainingSampleController.java # 训练样本
+│   │   │   │   │   ├── UserManagementController.java # 用户管理
+│   │   │   │   │   └── VideoController.java        # 视频管理
+│   │   │   │   ├── dto/                             # 数据传输对象
+│   │   │   │   │   ├── AnnotationDTO.java          # 标注DTO
+│   │   │   │   │   ├── CocoExportDTO.java          # COCO导出DTO
+│   │   │   │   │   ├── LoginRequest.java           # 登录请求
+│   │   │   │   │   ├── TrainingSampleDTO.java      # 训练样本DTO
+│   │   │   │   │   └── UserDTO.java                # 用户DTO
+│   │   │   │   ├── entity/                          # JPA实体类
+│   │   │   │   │   ├── Alert.java                  # 告警记录
+│   │   │   │   │   ├── AlertThreshold.java         # 告警阈值
+│   │   │   │   │   ├── DangerBehavior.java         # 危险行为
+│   │   │   │   │   ├── SampleAnnotation.java       # 样本标注
+│   │   │   │   │   ├── TrainingSample.java         # 训练样本
+│   │   │   │   │   ├── User.java                   # 用户
+│   │   │   │   │   └── Video.java                  # 视频
+│   │   │   │   ├── repository/                      # 数据访问层
+│   │   │   │   │   ├── AlertRepository.java
+│   │   │   │   │   ├── DangerBehaviorRepository.java
+│   │   │   │   │   ├── TrainingSampleRepository.java
+│   │   │   │   │   ├── UserRepository.java
+│   │   │   │   │   └── VideoRepository.java
+│   │   │   │   ├── service/                         # 业务逻辑层
+│   │   │   │   │   ├── AIServiceClient.java        # AI服务客户端
+│   │   │   │   │   ├── AlertPushService.java       # 告警推送
+│   │   │   │   │   ├── AuthService.java            # 认证服务
+│   │   │   │   │   ├── CacheService.java           # 缓存服务
+│   │   │   │   │   ├── FrameAnalysisService.java   # 帧分析
+│   │   │   │   │   ├── TrainingSampleService.java  # 样本服务
+│   │   │   │   │   ├── UserManagementService.java  # 用户管理
+│   │   │   │   │   └── VideoProcessingService.java # 视频处理
+│   │   │   │   ├── util/                            # 工具类
+│   │   │   │   │   ├── FFmpegUtil.java             # FFmpeg封装
+│   │   │   │   │   ├── FrameExtractor.java         # 帧提取
+│   │   │   │   │   └── JwtUtil.java                # JWT工具
+│   │   │   │   └── websocket/                       # WebSocket
+│   │   │   │       ├── AlertWebSocketHandler.java  # 告警处理器
+│   │   │   │       └── WebSocketSessionManager.java # 会话管理
 │   │   │   └── resources/
-│   │   │       ├── application.yml      # 应用配置
-│   │   │       └── db/migration/        # 数据库迁移脚本
-│   │   └── test/                        # 测试代码
-│   ├── storage/                         # 文件存储目录
-│   │   ├── uploads/                     # 上传的原始视频
-│   │   ├── transcoded/                  # 转码后的HLS文件
-│   │   └── thumbnails/                  # 视频缩略图
-│   └── pom.xml                          # Maven配置
+│   │   │       ├── application.yml                  # 应用配置
+│   │   │       └── db/migration/                    # Flyway迁移脚本
+│   │   │           ├── V1__create_users_table.sql
+│   │   │           ├── V2__create_videos_table.sql
+│   │   │           ├── V3__create_danger_behaviors_table.sql
+│   │   │           ├── V4__create_alert_thresholds_table.sql
+│   │   │           ├── V5__create_alerts_table.sql
+│   │   │           ├── V6__create_alert_statistics_table.sql
+│   │   │           ├── V7__add_ai_detection_fields.sql
+│   │   │           ├── V8__add_super_admin_role.sql
+│   │   │           └── V9__create_training_samples_tables.sql
+│   │   └── test/                                    # 测试代码
+│   ├── storage/                                     # 文件存储
+│   │   ├── uploads/                                # 原始视频
+│   │   ├── transcoded/                             # HLS视频
+│   │   ├── thumbnails/                             # 缩略图
+│   │   └── training-samples/                       # 训练样本
+│   └── pom.xml                                      # Maven配置
 │
-├── frontend/                   # 前端项目
+├── frontend/                             # Vue 3 前端应用
 │   ├── src/
-│   │   ├── api/                         # API接口
-│   │   ├── assets/                      # 静态资源
-│   │   ├── components/                  # 组件
-│   │   │   ├── AlertChart.vue          # 预警图表
-│   │   │   ├── AlertPanel.vue          # 预警面板
-│   │   │   └── VideoPlayer.vue         # 视频播放器
-│   │   ├── composables/                 # 组合式函数
-│   │   ├── router/                      # 路由配置
-│   │   ├── store/                       # 状态管理
+│   │   ├── api/                                     # API接口层
+│   │   │   ├── alert.ts                            # 告警API
+│   │   │   ├── auth.ts                             # 认证API
+│   │   │   ├── axios.ts                            # Axios配置
+│   │   │   ├── config.ts                           # 配置API
+│   │   │   ├── sample.ts                           # 样本API
+│   │   │   ├── user.ts                             # 用户API
+│   │   │   └── video.ts                            # 视频API
+│   │   ├── assets/                                  # 静态资源
+│   │   │   └── background.png                      # 登录背景图
+│   │   ├── components/                              # 可复用组件
+│   │   │   ├── AlertChart.vue                      # 告警图表
+│   │   │   ├── AlertPanel.vue                      # 告警面板
+│   │   │   └── VideoPlayer.vue                     # 视频播放器
+│   │   ├── composables/                             # 组合式函数
+│   │   │   └── useWebSocket.ts                     # WebSocket Hook
+│   │   ├── router/                                  # 路由配置
+│   │   │   └── index.ts                            # 路由定义
+│   │   ├── store/                                   # Pinia状态管理
+│   │   │   ├── index.ts                            # Store入口
 │   │   │   └── modules/
-│   │   │       ├── alert.ts            # 预警状态
-│   │   │       ├── auth.ts             # 认证状态
-│   │   │       ├── config.ts           # 配置状态
-│   │   │       └── video.ts            # 视频状态
-│   │   ├── types/                       # TypeScript类型定义
-│   │   ├── views/                       # 页面视图
-│   │   │   ├── Dashboard.vue           # 主控制台
-│   │   │   ├── Login.vue               # 登录页
-│   │   │   └── Admin/                  # 管理页面
-│   │   ├── App.vue                      # 根组件
-│   │   └── main.ts                      # 入口文件
-│   ├── package.json                     # npm配置
-│   └── vite.config.ts                   # Vite配置
+│   │   │       ├── alert.ts                        # 告警状态
+│   │   │       ├── auth.ts                         # 认证状态
+│   │   │       ├── config.ts                       # 配置状态
+│   │   │       └── video.ts                        # 视频状态
+│   │   ├── types/                                   # TypeScript类型
+│   │   │   ├── alert.ts                            # 告警类型
+│   │   │   ├── sample.ts                           # 样本类型
+│   │   │   ├── user.ts                             # 用户类型
+│   │   │   └── video.ts                            # 视频类型
+│   │   ├── views/                                   # 页面组件
+│   │   │   ├── Dashboard.vue                       # 主控制台
+│   │   │   ├── Login.vue                           # 登录页
+│   │   │   ├── Admin/                              # 管理页面
+│   │   │   │   ├── DangerBehaviors.vue            # 危险行为管理
+│   │   │   │   ├── Thresholds.vue                 # 阈值配置
+│   │   │   │   ├── UserManagement.vue             # 用户管理
+│   │   │   │   └── VideoManagement.vue            # 视频管理
+│   │   │   └── Samples/                            # 样本管理
+│   │   │       ├── SampleAnnotation.vue           # 样本标注
+│   │   │       ├── SampleList.vue                 # 样本列表
+│   │   │       ├── SampleReview.vue               # 样本审核
+│   │   │       └── SampleUpload.vue               # 样本上传
+│   │   ├── App.vue                                  # 根组件
+│   │   └── main.ts                                  # 应用入口
+│   ├── index.html                                   # HTML入口
+│   ├── package.json                                 # npm配置
+│   ├── vite.config.ts                               # Vite配置
+│   └── tsconfig.json                                # TypeScript配置
 │
-├── CLAUDE.md                   # AI助手指南
-└── README.md                   # 项目说明文档
+├── ai-service/                           # Python AI检测服务
+│   ├── app.py                                       # Flask应用入口
+│   ├── config.py                                    # 配置文件
+│   ├── requirements.txt                             # Python依赖
+│   ├── yolo11n.pt                                   # YOLO模型文件
+│   ├── models/                                      # AI模型
+│   │   ├── qwen_analyzer.py                        # Qwen分析器
+│   │   └── yolo_detector.py                        # YOLO检测器
+│   └── services/                                    # 业务服务
+│       ├── alert_evaluator.py                      # 告警评估
+│       └── detection_service.py                    # 检测服务
+│
+├── storage/                              # 共享文件存储
+│   ├── uploads/                                     # 用户上传视频
+│   ├── transcoded/                                  # 转码后视频
+│   └── training-samples/                            # 训练样本图片
+│
+├── CLAUDE.md                             # Claude AI项目指南
+└── README.md                             # 项目说明文档
 ```
 
 ---
