@@ -7,7 +7,23 @@
         <h1>智能安全监控系统</h1>
       </div>
       <div class="header-right">
-        <!-- 新增：管理后台按钮 -->
+        <!-- 样本上传按钮（所有用户可见） -->
+        <el-button
+          type="success"
+          @click="router.push('/samples/upload')"
+        >
+          样本上传
+        </el-button>
+
+        <!-- 样本列表按钮（所有用户可见） -->
+        <el-button
+          type="info"
+          @click="router.push('/samples/list')"
+        >
+          样本列表
+        </el-button>
+
+        <!-- 管理后台按钮 -->
         <el-button
           v-if="authStore.isAdmin()"
           type="primary"

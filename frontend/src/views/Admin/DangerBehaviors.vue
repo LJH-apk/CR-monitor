@@ -22,6 +22,7 @@
       <el-menu-item index="/admin/videos">视频管理</el-menu-item>
       <el-menu-item index="/admin/behaviors">危险行为管理</el-menu-item>
       <el-menu-item index="/admin/thresholds">告警阈值配置</el-menu-item>
+      <el-menu-item v-if="authStore.isSuperAdmin()" index="/admin/users">用户管理</el-menu-item>
     </el-menu>
 
     <el-card class="list-card">
@@ -98,10 +99,12 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useConfigStore } from '@/store/modules/config'
+import { useAuthStore } from '@/store/modules/auth'
 import type { DangerBehavior } from '@/types/alert'
 
 const router = useRouter()
 const configStore = useConfigStore()
+const authStore = useAuthStore()
 
 const showDialog = ref(false)
 const editingId = ref<number | null>(null)

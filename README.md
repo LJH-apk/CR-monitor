@@ -79,6 +79,20 @@
 - ✅ 用户权限管理
 - ✅ 系统监控面板
 
+### 权限系统
+- ✅ 三级权限体系（普通用户/管理员/超级管理员）
+- ✅ 基于角色的访问控制（RBAC）
+- ✅ 用户账户管理（创建、编辑、删除）
+- ✅ 角色权限分配
+
+### 训练样本管理
+- ✅ 图片样本上传（支持JPG/PNG格式）
+- ✅ 矩形边界框标注工具
+- ✅ 多标注框支持
+- ✅ 样本状态管理（待标注/已标注/已审核/已拒绝）
+- ✅ COCO JSON格式导出（用于YOLO增量学习）
+- ✅ 样本审核流程
+
 ---
 
 ## 🛠 技术栈
@@ -251,8 +265,12 @@ npm run dev
 打开浏览器访问：`http://localhost:5173`
 
 **默认账号**：
-- 用户名：`admin`
-- 密码：`admin123`
+
+| 角色 | 用户名 | 密码 | 权限说明 |
+|------|--------|------|----------|
+| 超级管理员 | admin | admin123 | 所有权限，包括用户管理 |
+| 管理员 | admin1 | admin123 | 视频管理、配置管理、样本审核 |
+| 普通用户 | user1 | admin123 | 查看监控、上传样本 |
 
 ---
 
@@ -419,6 +437,50 @@ export default defineConfig({
    - 时间窗口（秒）
    - 最大预警数量
 
+### 6. 权限系统使用
+
+#### 用户角色说明
+- **普通用户（USER）**：可以查看监控、确认预警、上传训练样本
+- **管理员（ADMIN）**：拥有普通用户权限，还可以上传视频、配置系统、审核样本
+- **超级管理员（SUPER_ADMIN）**：拥有所有权限，包括用户账户管理
+
+#### 管理用户账户（仅超级管理员）
+1. 使用超级管理员账号登录（admin/admin123）
+2. 进入"管理后台" → "用户管理"
+3. 可以执行以下操作：
+   - 创建新用户账户
+   - 编辑用户信息
+   - 修改用户角色
+   - 删除用户账户
+
+### 7. 训练样本上传
+
+#### 上传样本图片
+1. 点击顶部导航栏的"样本上传"按钮
+2. 选择或拖拽图片文件（支持JPG/PNG，最大10MB）
+3. 预览图片信息
+4. 点击"上传并标注"按钮
+
+#### 标注样本
+1. 上传成功后自动跳转到标注页面
+2. 使用鼠标拖拽绘制矩形边界框
+3. 为每个边界框选择对应的危险行为类型
+4. 可选填写备注信息
+5. 点击"添加到列表"保存当前标注
+6. 完成所有标注后点击"保存标注"
+
+#### 查看和管理样本
+1. 进入"样本列表"页面
+2. 使用状态筛选器查看不同状态的样本
+3. 普通用户只能看到自己上传的样本
+4. 管理员可以查看所有样本并进行审核
+
+#### 导出训练数据（仅管理员）
+1. 进入"样本列表"页面
+2. 点击"导出COCO JSON格式"按钮
+3. 系统将导出所有已审核通过的样本
+4. 下载的JSON文件可直接用于YOLO模型训练
+
 ---
 
 ## 🔌 API文档
@@ -480,6 +542,101 @@ Authorization: Bearer <token>
 ws://localhost:8080/api/ws/alerts?token=<jwt-token>
 ```
 
+### 用户管理接口（仅超级管理员）
+
+#### 获取用户列表
+```http
+GET /api/admin/users?page=0&size=10
+Authorization: Bearer <token>
+```
+
+#### 创建用户
+```http
+POST /api/admin/users
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "password": "password123",
+  "email": "user@example.com",
+  "role": "USER"
+}
+```
+
+#### 更新用户角色
+```http
+PUT /api/admin/users/{id}/role
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+```
+
+#### 删除用户
+```http
+DELETE /api/admin/users/{id}
+Authorization: Bearer <token>
+```
+
+### 训练样本接口
+
+#### 上传样本图片
+```http
+POST /api/samples/upload
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+file: <image-file>
+```
+
+#### 获取样本列表
+```http
+GET /api/samples?status=PENDING
+Authorization: Bearer <token>
+```
+
+#### 保存标注
+```http
+POST /api/samples/{id}/annotations
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "dangerBehaviorId": 1,
+  "xMin": 100,
+  "yMin": 150,
+  "xMax": 300,
+  "yMax": 400,
+  "notes": "可选备注"
+}
+```
+
+#### 更新样本状态（仅管理员）
+```http
+PUT /api/samples/{id}/status
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "status": "APPROVED"
+}
+```
+
+#### 导出COCO格式（仅管理员）
+```http
+GET /api/samples/export/coco
+Authorization: Bearer <token>
+```
+
+#### 删除样本
+```http
+DELETE /api/samples/{id}
+Authorization: Bearer <token>
+```
+
 ---
 
 ## ❓ 常见问题
@@ -522,20 +679,26 @@ java -version
 
 ## 🗺 开发路线图
 
-### v1.0.0 (当前版本)
+### ~~v0.1.0 (老版本)~~
 - ✅ 基础视频上传和播放
 - ✅ AI危险行为检测
 - ✅ 实时预警推送
 - ✅ 管理后台
 
-### v1.1.0 (计划中)
+### v0.1.2 (目前版本)
+- ✅ 样本图片上传标注（施工中）
+- ✅ 三级用户权限设置
+- ✅ 样本审核管理
+
+
+### v0.2.0 (计划中)
 - ⏳ 多摄像头支持
 - ⏳ 危险行为管理
 - ⏳ 实时视频流分析
 - ⏳ 移动端适配
 - ⏳ 预警邮件通知
 
-### v2.0.0 (未来)
+### v1.0.0 (未来)
 - 📋 更精细的物体识别
 - 📋 失物招领功能
 

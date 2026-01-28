@@ -31,7 +31,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/storage/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/samples/**").authenticated()  // 样本上传所有认证用户可访问
+                        .requestMatchers("/admin/users/**").hasRole("SUPER_ADMIN")  // 用户管理仅超管
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")  // 管理功能
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

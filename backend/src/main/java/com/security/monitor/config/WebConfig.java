@@ -11,6 +11,6 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Configure static resource access for storage directory
         registry.addResourceHandler("/storage/**")
-                .addResourceLocations("file:./storage/");
+                .addResourceLocations("file:/Users/liujiahang/Page/backend/storage/");
     }
 }

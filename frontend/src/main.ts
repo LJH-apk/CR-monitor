@@ -4,6 +4,7 @@ import router from './router'
 import pinia from './store'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { useAuthStore } from './store/modules/auth'
 
@@ -16,7 +17,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 
 app.use(pinia)
 app.use(router)
-app.use(ElementPlus)
+app.use(ElementPlus, { locale: zhCn })
 
 // 初始化认证状态
 const authStore = useAuthStore()

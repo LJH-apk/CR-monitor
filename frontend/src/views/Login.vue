@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <el-icon :size="40" color="#409EFF"><VideoCamera /></el-icon>
-          <h2>智能安全监控系统</h2>
+          <h2>智能监控系统</h2>
         </div>
       </template>
 
@@ -53,6 +53,10 @@
         />
       </div>
     </el-card>
+
+    <div class="copyright">
+      <p>© 2026 智能监控系统 版权所有 刘佳航 V0.1.2</p>
+    </div>
   </div>
 </template>
 
@@ -111,6 +115,7 @@ const handleLogin = async () => {
 <style scoped>
 .login-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
@@ -137,5 +142,17 @@ const handleLogin = async () => {
 
 .login-tips {
   margin-top: 20px;
+}
+
+.copyright {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.copyright p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 </style>

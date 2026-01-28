@@ -59,10 +59,18 @@ jwt:
 
 # Storage Configuration
 storage:
-  base-path: ./storage
+  base-path: /Users/liujiahang/Page/backend/storage
   uploads: ${storage.base-path}/uploads
   transcoded: ${storage.base-path}/transcoded
   thumbnails: ${storage.base-path}/thumbnails
+  training-samples: ${storage.base-path}/training-samples
+
+# Image Upload Configuration
+image-upload:
+  max-size: 10485760  # 10MB in bytes
+  allowed-types: image/jpeg,image/png,image/jpg
+  max-width: 4096
+  max-height: 4096
 
 # FFmpeg Configuration
 ffmpeg:
@@ -85,5 +93,5 @@ frame-extraction:
 logging:
   level:
     root: INFO
-    com.security.monitor: DEBUG
-    org.springframework.security: DEBUG
+    com.security.monitor: INFO
+    org.springframework.security: WARN
