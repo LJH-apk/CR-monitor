@@ -61,6 +61,18 @@ const router = createRouter({
       name: 'SampleList',
       component: () => import('@/views/Samples/SampleList.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/samples/review',
+      name: 'SampleReview',
+      component: () => import('@/views/Samples/SampleReview.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/samples/review/:id',
+      name: 'SampleReviewDetail',
+      component: () => import('@/views/Samples/SampleReview.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
     }
   ]
 })

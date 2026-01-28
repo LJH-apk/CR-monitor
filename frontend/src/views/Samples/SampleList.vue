@@ -5,6 +5,13 @@
         <span class="page-title">训练样本列表</span>
       </template>
       <template #extra>
+        <el-button
+          v-if="authStore.isAdmin()"
+          type="success"
+          @click="router.push('/samples/review')"
+        >
+          进入审核
+        </el-button>
         <el-button type="primary" @click="router.push('/samples/upload')">
           上传样本
         </el-button>
@@ -76,20 +83,7 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item
-                    :command="{ action: 'approve', id: sample.id }"
-                    v-if="sample.status === 'ANNOTATED'"
-                  >
-                    审核通过
-                  </el-dropdown-item>
-                  <el-dropdown-item
-                    :command="{ action: 'reject', id: sample.id }"
-                    v-if="sample.status === 'ANNOTATED'"
-                  >
-                    拒绝
-                  </el-dropdown-item>
-                  <el-dropdown-item
                     :command="{ action: 'delete', id: sample.id }"
-                    divided
                   >
                     删除
                   </el-dropdown-item>
@@ -120,7 +114,7 @@
     </el-card>
 
     <!-- 查看详情对话框 -->
-    <el-dialog v-model="showDetailDialog" title="样本详情" width="800px">
+    <el-dialog v-model="showDetailDialog" title="样本详情" width="1000px">
       <div v-if="currentSample">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="文件名">
@@ -145,6 +139,14 @@
           </el-descriptions-item>
         </el-descriptions>
 
+        <!-- 标注可视化 -->
+        <div v-if="currentSample.annotations && currentSample.annotations.length > 0" class="annotation-visualization">
+          <h4 style="margin-top: 20px; margin-bottom: 10px">标注可视化</h4>
+          <div class="canvas-wrapper">
+            <canvas ref="detailCanvasRef" id="detail-canvas"></canvas>
+          </div>
+        </div>
+
         <h4 style="margin-top: 20px">标注列表 ({{ currentSample.annotations?.length || 0 }})</h4>
         <el-table :data="currentSample.annotations" style="width: 100%; margin-top: 10px">
           <el-table-column prop="dangerBehaviorName" label="危险行为" width="150" />
@@ -161,10 +163,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
+import { Canvas, Rect, FabricImage } from 'fabric'
+import * as fabric from 'fabric'
 import { sampleApi } from '@/api/sample'
 import { useAuthStore } from '@/store/modules/auth'
 import type { TrainingSample } from '@/types/sample'
@@ -179,6 +183,8 @@ const exporting = ref(false)
 
 const showDetailDialog = ref(false)
 const currentSample = ref<TrainingSample | null>(null)
+const detailCanvasRef = ref<HTMLCanvasElement | null>(null)
+const detailCanvas = ref<Canvas | null>(null)
 
 onMounted(() => {
   loadSamples()
@@ -216,6 +222,116 @@ const viewSample = async (sample: TrainingSample) => {
   } catch (error) {
     ElMessage.error('加载样本详情失败')
   }
+}
+
+// 监听详情对话框打开，初始化画布
+watch(showDetailDialog, async (newVal) => {
+  if (newVal && currentSample.value && currentSample.value.annotations && currentSample.value.annotations.length > 0) {
+    await nextTick()
+    initDetailCanvas()
+  } else if (!newVal && detailCanvas.value) {
+    // 关闭对话框时清理画布
+    detailCanvas.value.dispose()
+    detailCanvas.value = null
+  }
+})
+
+// 初始化详情画布（只读模式）
+const initDetailCanvas = () => {
+  if (!detailCanvasRef.value || !currentSample.value) return
+
+  const imgUrl = `/api/storage/training-samples/${currentSample.value.userId}/${currentSample.value.storedFilename}`
+
+  FabricImage.fromURL(imgUrl).then((img) => {
+    if (!detailCanvasRef.value || !currentSample.value) return
+
+    const imgWidth = img.width || 800
+    const imgHeight = img.height || 600
+
+    // 设置最大画布尺寸
+    const maxWidth = 900
+    const maxHeight = 600
+
+    let canvasWidth = imgWidth
+    let canvasHeight = imgHeight
+    let scale = 1
+
+    if (imgWidth > maxWidth || imgHeight > maxHeight) {
+      scale = Math.min(maxWidth / imgWidth, maxHeight / imgHeight)
+      canvasWidth = imgWidth * scale
+      canvasHeight = imgHeight * scale
+    }
+
+    // 清理旧画布
+    if (detailCanvas.value) {
+      detailCanvas.value.dispose()
+    }
+
+    detailCanvas.value = new Canvas('detail-canvas', {
+      width: canvasWidth,
+      height: canvasHeight,
+      backgroundColor: '#f0f0f0',
+      selection: false
+    })
+
+    img.scale(scale)
+    img.set({
+      left: 0,
+      top: 0,
+      originX: 'left',
+      originY: 'top',
+      selectable: false,
+      evented: false
+    })
+
+    detailCanvas.value.add(img)
+    detailCanvas.value.sendObjectToBack(img)
+
+    // 渲染标注框
+    if (currentSample.value.annotations && currentSample.value.annotations.length > 0) {
+      currentSample.value.annotations.forEach((annotation) => {
+        const left = annotation.xMin * scale
+        const top = annotation.yMin * scale
+        const width = (annotation.xMax - annotation.xMin) * scale
+        const height = (annotation.yMax - annotation.yMin) * scale
+
+        // 创建矩形框
+        const rect = new Rect({
+          left: 0,
+          top: 0,
+          width,
+          height,
+          fill: 'rgba(0, 255, 0, 0.15)',
+          stroke: 'green',
+          strokeWidth: 2
+        })
+
+        // 创建标签
+        const label = new fabric.Text(annotation.dangerBehaviorName || '未知', {
+          left: 0,
+          top: -20,
+          fontSize: 14,
+          fill: 'green',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)'
+        })
+
+        // 使用 Group 组合
+        const group = new fabric.Group([rect, label], {
+          left,
+          top,
+          selectable: false,
+          evented: false
+        })
+
+        detailCanvas.value!.add(group)
+      })
+    }
+
+    detailCanvas.value.renderAll()
+  }).catch((error) => {
+    console.error('Failed to load image:', error)
+    ElMessage.error('图片加载失败')
+  })
 }
 
 const handleCommand = async (command: { action: string; id: number }) => {
@@ -391,5 +507,20 @@ const formatFileSize = (bytes: number): string => {
   margin-left: 10px;
   font-size: 12px;
   color: #999;
+}
+
+.annotation-visualization {
+  margin-top: 20px;
+}
+
+.annotation-visualization .canvas-wrapper {
+  background: #fff;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: 10px;
 }
 </style>

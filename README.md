@@ -1,6 +1,8 @@
-# 智能安全监控系统
+
 
 <div align="center">
+
+# 智能安全监控系统
 
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 ![Java](https://img.shields.io/badge/Java-18-orange.svg)

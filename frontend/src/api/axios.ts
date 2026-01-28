@@ -1,4 +1,5 @@
 import axios from 'axios'
+import router from '@/router'
 
 const apiClient = axios.create({
   baseURL: 'http://localhost:8080/api',
@@ -29,10 +30,14 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Token过期或无效，跳转到登录页
+      // Token过期或无效，清理本地存储
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+
+      // 使用router重定向到登录页（避免页面刷新）
+      if (router.currentRoute.value.path !== '/login') {
+        router.push('/login')
+      }
     }
     return Promise.reject(error)
   }

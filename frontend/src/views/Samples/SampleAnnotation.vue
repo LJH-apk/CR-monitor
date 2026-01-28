@@ -17,7 +17,23 @@
         <template #header>
           <div class="card-header">
             <span>图片标注</span>
-            <el-button size="small" @click="clearCurrentRect">清除当前框</el-button>
+            <div class="header-actions">
+              <el-button
+                size="small"
+                :type="isDrawingMode ? 'primary' : 'default'"
+                @click="toggleDrawingMode"
+              >
+                {{ isDrawingMode ? '退出绘制' : '绘制新标注' }}
+              </el-button>
+              <el-button
+                v-if="currentRect"
+                size="small"
+                type="danger"
+                @click="clearCurrentRect"
+              >
+                清除当前框
+              </el-button>
+            </div>
           </div>
         </template>
         <div class="canvas-wrapper">
@@ -26,9 +42,10 @@
         <div class="canvas-tips">
           <p>操作提示：</p>
           <ul>
-            <li>按住鼠标左键拖拽绘制矩形框</li>
-            <li>点击已有矩形框可以选中并移动</li>
-            <li>选中矩形框后可以拖动边角调整大小</li>
+            <li v-if="isDrawingMode">绘制模式：按住鼠标左键拖拽绘制矩形框</li>
+            <li v-else>选择模式：点击标注框可以移动和调整大小</li>
+            <li>点击"绘制新标注"按钮进入绘制模式</li>
+            <li>在标注列表中点击"定位"可以高亮显示对应的标注框</li>
           </ul>
         </div>
       </el-card>
@@ -83,13 +100,22 @@
               </p>
               <p v-if="ann.notes" class="annotation-notes">{{ ann.notes }}</p>
             </div>
-            <el-button
-              type="danger"
-              size="small"
-              @click="removeAnnotation(index)"
-            >
-              删除
-            </el-button>
+            <div class="annotation-actions">
+              <el-button
+                type="primary"
+                size="small"
+                @click="locateAnnotation(index)"
+              >
+                定位
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                @click="removeAnnotation(index)"
+              >
+                删除
+              </el-button>
+            </div>
           </div>
           <el-empty v-if="annotations.length === 0" description="暂无标注" />
         </div>
@@ -103,6 +129,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Canvas, Rect, FabricImage } from 'fabric'
+import * as fabric from 'fabric'
 import { sampleApi } from '@/api/sample'
 import { dangerBehaviorApi } from '@/api/config'
 import type { Annotation } from '@/types/sample'
@@ -116,6 +143,7 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const canvas = ref<Canvas | null>(null)
 const currentRect = ref<Rect | null>(null)
 const isDrawing = ref(false)
+const isDrawingMode = ref(false) // 绘制模式开关
 const startX = ref(0)
 const startY = ref(0)
 
@@ -226,10 +254,22 @@ const initCanvas = () => {
     canvas.value.sendObjectToBack(img)
     canvas.value.renderAll()
 
-    // 绑定鼠标事件
+    // 设置画布为选择模式（默认）
+    canvas.value.selection = true
+    canvas.value.isDrawingMode = false
+
+    // 绑定鼠标事件（仅在绘制模式下生效）
     canvas.value.on('mouse:down', handleMouseDown)
     canvas.value.on('mouse:move', handleMouseMove)
     canvas.value.on('mouse:up', handleMouseUp)
+
+    // 绑定对象事件（用于更新标注数据）
+    canvas.value.on('object:modified', handleObjectModified)
+    canvas.value.on('object:moving', handleObjectMoving)
+    canvas.value.on('object:scaling', handleObjectScaling)
+
+    // 渲染已有的标注框
+    renderExistingAnnotations()
   }).catch((error) => {
     console.error('Failed to load image:', error)
     ElMessage.error('图片加载失败')
@@ -237,12 +277,24 @@ const initCanvas = () => {
 }
 
 const handleMouseDown = (e: any) => {
-  if (!canvas.value) return
+  // 只在绘制模式下处理
+  if (!canvas.value || !isDrawingMode.value) return
 
+  // 检查是否点击了已有对象
+  const target = canvas.value.findTarget(e.e)
+  if (target && (target as any).type === 'rect') {
+    // 点击了已有的矩形框，不创建新框
+    return
+  }
+
+  // 在空白区域，开始绘制新矩形
   const pointer = canvas.value.getViewportPoint(e.e)
   isDrawing.value = true
   startX.value = pointer.x
   startY.value = pointer.y
+
+  // 禁用画布选择，避免干扰绘制
+  canvas.value.selection = false
 
   // 创建新矩形
   currentRect.value = new Rect({
@@ -253,7 +305,8 @@ const handleMouseDown = (e: any) => {
     fill: 'rgba(255, 0, 0, 0.2)',
     stroke: 'red',
     strokeWidth: 2,
-    selectable: true
+    selectable: false,
+    evented: false
   })
 
   canvas.value.add(currentRect.value)
@@ -261,7 +314,8 @@ const handleMouseDown = (e: any) => {
 }
 
 const handleMouseMove = (e: any) => {
-  if (!isDrawing.value || !currentRect.value || !canvas.value) return
+  // 只在绘制模式且正在绘制时处理
+  if (!isDrawing.value || !currentRect.value || !canvas.value || !isDrawingMode.value) return
 
   const pointer = canvas.value.getViewportPoint(e.e)
   const width = pointer.x - startX.value
@@ -278,12 +332,78 @@ const handleMouseMove = (e: any) => {
 }
 
 const handleMouseUp = () => {
+  if (!isDrawingMode.value) return
+
   isDrawing.value = false
+
+  // 恢复画布选择
+  if (canvas.value) {
+    canvas.value.selection = true
+  }
 
   // 如果矩形太小，删除它
   if (currentRect.value && (currentRect.value.width! < 10 || currentRect.value.height! < 10)) {
     canvas.value?.remove(currentRect.value)
     currentRect.value = null
+  }
+}
+
+// 处理对象修改事件
+const handleObjectModified = (e: any) => {
+  const target = e.target
+  if (target && target.data?.type === 'annotation-group') {
+    const index = target.data.annotationIndex
+    updateAnnotationFromGroup(target, index)
+  }
+}
+
+// 处理对象移动事件
+const handleObjectMoving = (e: any) => {
+  const target = e.target
+  if (target && target.data?.type === 'annotation-group') {
+    const index = target.data.annotationIndex
+    updateAnnotationFromGroup(target, index)
+  }
+}
+
+// 处理对象缩放事件
+const handleObjectScaling = (e: any) => {
+  const target = e.target
+  if (target && target.data?.type === 'annotation-group') {
+    const index = target.data.annotationIndex
+    updateAnnotationFromGroup(target, index)
+  }
+}
+
+// 切换绘制模式
+const toggleDrawingMode = () => {
+  isDrawingMode.value = !isDrawingMode.value
+
+  if (canvas.value) {
+    if (isDrawingMode.value) {
+      // 进入绘制模式：禁用所有对象的选择
+      canvas.value.selection = false
+      canvas.value.forEachObject((obj: any) => {
+        if (obj.data?.type === 'annotation-group') {
+          obj.set({ selectable: false, evented: false })
+        }
+      })
+      ElMessage.info('已进入绘制模式，可以绘制新的标注框')
+    } else {
+      // 退出绘制模式：启用对象选择
+      canvas.value.selection = true
+      canvas.value.forEachObject((obj: any) => {
+        if (obj.data?.type === 'annotation-group') {
+          obj.set({ selectable: true, evented: true })
+        }
+      })
+      // 清除未完成的绘制
+      if (currentRect.value) {
+        clearCurrentRect()
+      }
+      ElMessage.info('已退出绘制模式，可以选择和编辑标注框')
+    }
+    canvas.value.renderAll()
   }
 }
 
@@ -293,6 +413,111 @@ const clearCurrentRect = () => {
     currentRect.value = null
     currentBehaviorId.value = null
     currentNotes.value = ''
+  }
+}
+
+// 创建标注Group（矩形框+标签）
+const createAnnotationGroup = (
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  behaviorName: string,
+  annotationIndex: number,
+  isNew: boolean = false
+) => {
+  // 创建矩形框（相对于Group的坐标）
+  const rect = new Rect({
+    left: 0,
+    top: 0,
+    width,
+    height,
+    fill: isNew ? 'rgba(255, 0, 0, 0.2)' : 'rgba(0, 255, 0, 0.2)',
+    stroke: isNew ? 'red' : 'green',
+    strokeWidth: 2
+  })
+
+  // 创建标签（位于矩形框左上角外侧）
+  const label = new fabric.Text(behaviorName, {
+    left: 0,
+    top: -20,
+    fontSize: 14,
+    fill: isNew ? 'red' : 'green',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)'
+  })
+
+  // 创建Group组合
+  const group = new fabric.Group([rect, label], {
+    left,
+    top,
+    lockRotation: true,
+    hasControls: true,
+    hasBorders: true,
+    selectable: true,
+    data: {
+      annotationIndex,
+      type: 'annotation-group',
+      behaviorName
+    }
+  })
+
+  return group
+}
+
+// 渲染已有的标注框
+const renderExistingAnnotations = () => {
+  if (!canvas.value || annotations.value.length === 0) return
+
+  const scale = canvasScale.value
+
+  annotations.value.forEach((annotation, index) => {
+    // 将实际坐标转换为画布坐标
+    const left = annotation.xMin * scale
+    const top = annotation.yMin * scale
+    const width = (annotation.xMax - annotation.xMin) * scale
+    const height = (annotation.yMax - annotation.yMin) * scale
+
+    const behaviorName = getBehaviorName(annotation.dangerBehaviorId)
+    const group = createAnnotationGroup(
+      left, top, width, height,
+      behaviorName, index, false
+    )
+
+    // 根据绘制模式设置可选性
+    group.set({
+      selectable: !isDrawingMode.value,
+      evented: !isDrawingMode.value
+    })
+
+    if (canvas.value) {
+      canvas.value.add(group)
+    }
+  })
+
+  if (canvas.value) {
+    canvas.value.renderAll()
+  }
+}
+
+// 从Group更新标注数据
+const updateAnnotationFromGroup = (group: any, index: number) => {
+  if (!canvas.value) return
+
+  const scale = canvasScale.value
+
+  // 获取Group的实际边界
+  const boundingRect = group.getBoundingRect()
+  const xMin = Math.round(boundingRect.left / scale)
+  const yMin = Math.round(boundingRect.top / scale)
+  const xMax = Math.round((boundingRect.left + boundingRect.width) / scale)
+  const yMax = Math.round((boundingRect.top + boundingRect.height) / scale)
+
+  // 更新annotations数组
+  if (annotations.value[index]) {
+    annotations.value[index].xMin = xMin
+    annotations.value[index].yMin = yMin
+    annotations.value[index].xMax = xMax
+    annotations.value[index].yMax = yMax
   }
 }
 
@@ -306,6 +531,8 @@ const addAnnotation = () => {
     ElMessage.warning('请选择危险行为类型')
     return
   }
+
+  if (!canvas.value) return
 
   // 计算实际坐标（考虑缩放）
   const scale = canvasScale.value
@@ -324,21 +551,105 @@ const addAnnotation = () => {
     notes: currentNotes.value
   }
 
+  const annotationIndex = annotations.value.length
   annotations.value.push(annotation)
-  ElMessage.success('标注已添加')
 
-  // 清除当前矩形
-  clearCurrentRect()
+  // 移除临时矩形框
+  canvas.value.remove(currentRect.value)
+
+  // 创建Group对象替代
+  const behaviorName = getBehaviorName(currentBehaviorId.value)
+  const group = createAnnotationGroup(
+    currentRect.value.left || 0,
+    currentRect.value.top || 0,
+    currentRect.value.width || 0,
+    currentRect.value.height || 0,
+    behaviorName,
+    annotationIndex,
+    false  // 已保存状态，使用绿色
+  )
+
+  // 在绘制模式下不可选
+  group.set({
+    selectable: false,
+    evented: false
+  })
+
+  canvas.value.add(group)
+  canvas.value.renderAll()
+
+  // 重置当前状态
+  currentRect.value = null
+  currentBehaviorId.value = null
+  currentNotes.value = ''
+
+  ElMessage.success('标注已添加')
 }
 
 const removeAnnotation = (index: number) => {
+  if (!canvas.value) return
+
+  const objects = canvas.value.getObjects()
+
+  // 移除Group对象
+  const groupToRemove = objects.find((obj: any) =>
+    obj.data?.type === 'annotation-group' && obj.data?.annotationIndex === index
+  )
+
+  if (groupToRemove) {
+    canvas.value.remove(groupToRemove)
+  }
+
+  // 更新剩余对象的索引
+  objects.forEach((obj: any) => {
+    if (obj.data?.annotationIndex > index) {
+      obj.data.annotationIndex--
+    }
+  })
+
+  // 从数组中移除标注
   annotations.value.splice(index, 1)
+  canvas.value.renderAll()
   ElMessage.success('标注已删除')
 }
 
 const getBehaviorName = (behaviorId: number): string => {
   const behavior = behaviors.value.find(b => b.id === behaviorId)
   return behavior?.name || '未知'
+}
+
+// 定位并高亮标注框
+const locateAnnotation = (index: number) => {
+  if (!canvas.value) return
+
+  // 取消所有对象的选择
+  canvas.value.discardActiveObject()
+
+  // 找到对应的Group
+  const objects = canvas.value.getObjects()
+  const group = objects.find((obj: any) =>
+    obj.data?.type === 'annotation-group' && obj.data?.annotationIndex === index
+  )
+
+  if (group) {
+    // 选中并高亮该Group
+    canvas.value.setActiveObject(group)
+    canvas.value.renderAll()
+
+    // 临时改变颜色以突出显示
+    const rect = (group as any)._objects[0]  // Group内的矩形框
+    const originalStroke = rect.stroke
+    rect.set({ stroke: 'yellow', strokeWidth: 4 })
+    canvas.value.renderAll()
+
+    // 2秒后恢复原色
+    setTimeout(() => {
+      rect.set({ stroke: originalStroke, strokeWidth: 2 })
+      canvas.value?.renderAll()
+    }, 2000)
+
+    ElMessage.success('已定位到标注框')
+  }
 }
 
 const handleSave = async () => {
@@ -393,6 +704,11 @@ const handleSave = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .canvas-wrapper {
@@ -464,6 +780,12 @@ const handleSave = async () => {
 
 .annotation-info {
   flex: 1;
+}
+
+.annotation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .annotation-info strong {

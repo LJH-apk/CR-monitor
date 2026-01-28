@@ -23,17 +23,26 @@
           样本列表
         </el-button>
 
-        <!-- 管理后台按钮 -->
+        <!-- 视频管理按钮（管理员可见） -->
         <el-button
           v-if="authStore.isAdmin()"
           type="primary"
-          :icon="Setting"
           @click="router.push('/admin/videos')"
+        >
+          视频管理
+        </el-button>
+
+        <!-- 管理后台按钮（管理员可见） -->
+        <el-button
+          v-if="authStore.isAdmin()"
+          type="warning"
+          :icon="Setting"
+          @click="router.push('/admin/behaviors')"
         >
           管理后台
         </el-button>
 
-        <el-dropdown @command="handleCommand">
+        <el-dropdown @command="handleUserCommand">
           <span class="user-info">
             <el-icon><User /></el-icon>
             {{ authStore.user?.username }}
@@ -343,9 +352,9 @@ const connectWebSocketForVideo = (videoId: number) => {
   }
 }
 
-const handleCommand = (command: string) => {
+const handleUserCommand = async (command: string) => {
   if (command === 'logout') {
-    authStore.logout()
+    await authStore.logout()
     router.push('/login')
     ElMessage.success('已退出登录')
   }
