@@ -2,9 +2,21 @@
   <div class="admin-container">
     <el-page-header @back="goBack" title="返回">
       <template #content>
-        <span class="page-title">视频管理</span>
+        <span class="page-title">管理后台</span>
       </template>
     </el-page-header>
+
+    <!-- 导航菜单 -->
+    <el-menu
+      :default-active="'/admin/videos'"
+      mode="horizontal"
+      :router="true"
+      class="admin-menu"
+    >
+      <el-menu-item index="/admin/videos">视频管理</el-menu-item>
+      <el-menu-item index="/admin/behaviors">危险行为管理</el-menu-item>
+      <el-menu-item index="/admin/thresholds">告警阈值配置</el-menu-item>
+    </el-menu>
 
     <el-card class="upload-card">
       <el-upload
@@ -176,6 +188,12 @@ const formatFileSize = (bytes: number) => {
 .page-title {
   font-size: 18px;
   font-weight: 600;
+}
+
+.admin-menu {
+  margin: 20px 0;
+  background: white;
+  border-radius: 4px;
 }
 
 .upload-card {

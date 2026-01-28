@@ -2,7 +2,7 @@
   <div class="admin-container">
     <el-page-header @back="goBack" title="返回">
       <template #content>
-        <span class="page-title">危险行为管理</span>
+        <span class="page-title">管理后台</span>
       </template>
       <template #extra>
         <el-button type="primary" @click="showDialog = true">
@@ -11,6 +11,18 @@
         </el-button>
       </template>
     </el-page-header>
+
+    <!-- 导航菜单 -->
+    <el-menu
+      :default-active="'/admin/behaviors'"
+      mode="horizontal"
+      :router="true"
+      class="admin-menu"
+    >
+      <el-menu-item index="/admin/videos">视频管理</el-menu-item>
+      <el-menu-item index="/admin/behaviors">危险行为管理</el-menu-item>
+      <el-menu-item index="/admin/thresholds">告警阈值配置</el-menu-item>
+    </el-menu>
 
     <el-card class="list-card">
       <el-table :data="configStore.dangerBehaviors" style="width: 100%">
@@ -174,6 +186,12 @@ const resetForm = () => {
 .page-title {
   font-size: 18px;
   font-weight: 600;
+}
+
+.admin-menu {
+  margin: 20px 0;
+  background: white;
+  border-radius: 4px;
 }
 
 .list-card {
