@@ -1,1 +1,3 @@
 storage/
+/backend/.env
+/backend/target/
