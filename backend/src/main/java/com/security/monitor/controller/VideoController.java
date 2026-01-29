@@ -23,14 +23,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/videos")
 public class VideoController {
 
     private static final Logger logger = LoggerFactory.getLogger(VideoController.class);
+
+    // 安全：允许的视频文件扩展名
+    private static final List<String> ALLOWED_VIDEO_EXTENSIONS = Arrays.asList(
+            ".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"
+    );
+
+    // 安全：允许的MIME类型
+    private static final List<String> ALLOWED_MIME_TYPES = Arrays.asList(
+            "video/mp4", "video/x-msvideo", "video/quicktime",
+            "video/x-matroska", "video/x-flv", "video/x-ms-wmv", "video/webm"
+    );
+
+    // 安全：文件名只允许字母、数字、下划线、连字符和点
+    private static final Pattern SAFE_FILENAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\-\\.]+$");
 
     @Autowired
     private VideoRepository videoRepository;
@@ -47,6 +63,73 @@ public class VideoController {
     @Value("${storage.uploads}")
     private String uploadsPath;
 
+    /**
+     * 安全：验证文件名，防止路径遍历攻击
+     */
+    private String sanitizeFilename(String filename) {
+        if (filename == null || filename.trim().isEmpty()) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+
+        // 移除路径分隔符
+        filename = filename.replace("/", "").replace("\\", "").replace("..", "");
+
+        // 只保留文件名部分（去除路径）
+        int lastSeparator = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+        if (lastSeparator >= 0) {
+            filename = filename.substring(lastSeparator + 1);
+        }
+
+        // 验证文件名格式
+        if (!SAFE_FILENAME_PATTERN.matcher(filename).matches()) {
+            throw new IllegalArgumentException("文件名包含非法字符");
+        }
+
+        return filename;
+    }
+
+    /**
+     * 安全：验证文件类型
+     */
+    private void validateVideoFile(MultipartFile file) {
+        // 验证文件不为空
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("文件不能为空");
+        }
+
+        // 验证文件大小（最大500MB）
+        long maxSize = 500 * 1024 * 1024L;
+        if (file.getSize() > maxSize) {
+            throw new IllegalArgumentException("文件大小超过限制（最大500MB）");
+        }
+
+        // 验证MIME类型
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("不支持的文件类型，只允许视频文件");
+        }
+
+        // 验证文件扩展名
+        String filename = file.getOriginalFilename();
+        if (filename == null) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+
+        String extension = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+        if (!ALLOWED_VIDEO_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("不支持的文件扩展名");
+        }
+    }
+
+    /**
+     * 安全：验证用户是否有权访问该视频
+     */
+    private boolean canAccessVideo(Long videoId, Long userId) {
+        return videoRepository.findById(videoId)
+                .map(video -> video.getUserId().equals(userId))
+                .orElse(false);
+    }
+
     @PostMapping("/upload")
     public ResponseEntity<VideoUploadResponse> uploadVideo(
             @RequestParam("file") MultipartFile file,
@@ -56,6 +139,12 @@ public class VideoController {
             String token = authHeader.substring(7);
             Long userId = jwtUtil.extractUserId(token);
 
+            // 安全：验证文件类型和大小
+            validateVideoFile(file);
+
+            // 安全：清理文件名，防止路径遍历
+            String originalFilename = sanitizeFilename(file.getOriginalFilename());
+
             // Create user directory
             String userDir = uploadsPath + "/" + userId;
             File directory = new File(userDir);
@@ -63,10 +152,16 @@ public class VideoController {
                 directory.mkdirs();
             }
 
-            // Generate unique filename
-            String originalFilename = file.getOriginalFilename();
-            String storedFilename = UUID.randomUUID().toString() + "_" + originalFilename;
+            // 安全：使用UUID生成文件名，只保留扩展名
+            String extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            String storedFilename = UUID.randomUUID().toString() + extension;
             String filePath = userDir + "/" + storedFilename;
+
+            // 安全：验证最终路径不包含路径遍历
+            Path normalizedPath = Paths.get(filePath).normalize();
+            if (!normalizedPath.startsWith(Paths.get(uploadsPath).normalize())) {
+                throw new SecurityException("检测到路径遍历攻击");
+            }
 
             // Save file
             Path path = Paths.get(filePath);
@@ -96,10 +191,15 @@ public class VideoController {
                     "Video uploaded successfully and transcoding started"
             ));
 
+        } catch (IllegalArgumentException | SecurityException e) {
+            logger.warn("Invalid upload request: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new VideoUploadResponse(
+                    null, null, "FAILED", e.getMessage()
+            ));
         } catch (IOException e) {
             logger.error("Failed to upload video", e);
             return ResponseEntity.badRequest().body(new VideoUploadResponse(
-                    null, null, "FAILED", "Failed to upload video: " + e.getMessage()
+                    null, null, "FAILED", "文件上传失败，请重试"
             ));
         }
     }
@@ -114,16 +214,77 @@ public class VideoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Video> getVideo(@PathVariable Long id) {
+    public ResponseEntity<Video> getVideo(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader) {
+
+        String token = authHeader.substring(7);
+        Long userId = jwtUtil.extractUserId(token);
+
+        // 安全：验证用户是否有权访问该视频
+        if (!canAccessVideo(id, userId)) {
+            logger.warn("User {} attempted to access video {} without permission", userId, id);
+            return ResponseEntity.status(403).build();
+        }
+
         return videoRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteVideo(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteVideo(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader) {
+
+        String token = authHeader.substring(7);
+        Long userId = jwtUtil.extractUserId(token);
+
+        // 安全：验证用户是否拥有该视频
+        if (!canAccessVideo(id, userId)) {
+            logger.warn("User {} attempted to delete video {} without permission", userId, id);
+            return ResponseEntity.status(403).build();
+        }
+
+        // 删除视频文件和数据库记录
+        videoRepository.findById(id).ifPresent(video -> {
+            try {
+                // 删除原始文件
+                File originalFile = new File(video.getOriginalPath());
+                if (originalFile.exists()) {
+                    originalFile.delete();
+                }
+
+                // 删除转码文件目录
+                if (video.getHlsPath() != null) {
+                    File transcodedDir = new File(video.getHlsPath()).getParentFile();
+                    if (transcodedDir != null && transcodedDir.exists()) {
+                        deleteDirectory(transcodedDir);
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Failed to delete video files for video {}", id, e);
+            }
+        });
+
         videoRepository.deleteById(id);
+        logger.info("Video {} deleted by user {}", id, userId);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 递归删除目录
+     */
+    private void deleteDirectory(File directory) {
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    deleteDirectory(file);
+                }
+            }
+        }
+        directory.delete();
     }
 
     @GetMapping("/{id}/analysis-progress")

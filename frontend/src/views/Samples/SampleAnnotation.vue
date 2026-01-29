@@ -134,6 +134,7 @@ import { sampleApi } from '@/api/sample'
 import { dangerBehaviorApi } from '@/api/config'
 import type { Annotation } from '@/types/sample'
 import type { DangerBehavior } from '@/types/alert'
+import { loadAuthenticatedImage, revokeBlobUrl } from '@/utils/imageLoader'
 
 const route = useRoute()
 const router = useRouter()
@@ -157,6 +158,7 @@ const imageWidth = ref(0)
 const imageHeight = ref(0)
 const currentSample = ref<any>(null)
 const canvasScale = ref(1) // 画布缩放比例
+const imageBlobUrl = ref<string | null>(null)
 
 onMounted(async () => {
   await loadBehaviors()
@@ -167,6 +169,10 @@ onMounted(async () => {
 onUnmounted(() => {
   if (canvas.value) {
     canvas.value.dispose()
+  }
+  // 清理blob URL
+  if (imageBlobUrl.value) {
+    revokeBlobUrl(imageBlobUrl.value)
   }
 })
 
@@ -200,14 +206,20 @@ const loadSample = async () => {
   }
 }
 
-const initCanvas = () => {
+const initCanvas = async () => {
   if (!canvasRef.value || !currentSample.value) return
 
-  // 加载图片 - 使用正确的路径
-  const imgUrl = `/api/storage/training-samples/${currentSample.value.userId}/${currentSample.value.storedFilename}`
+  try {
+    // 清理旧的blob URL
+    if (imageBlobUrl.value) {
+      revokeBlobUrl(imageBlobUrl.value)
+    }
 
-  // 先加载图片获取尺寸，然后创建匹配的画布
-  FabricImage.fromURL(imgUrl).then((img) => {
+    // 使用认证的图片加载
+    const blobUrl = await loadAuthenticatedImage(`/files/samples/${currentSample.value.id}`)
+    imageBlobUrl.value = blobUrl
+
+    const img = await FabricImage.fromURL(blobUrl)
     if (!canvasRef.value) return
 
     // 获取图片原始尺寸
@@ -270,10 +282,10 @@ const initCanvas = () => {
 
     // 渲染已有的标注框
     renderExistingAnnotations()
-  }).catch((error) => {
+  } catch (error) {
     console.error('Failed to load image:', error)
     ElMessage.error('图片加载失败')
-  })
+  }
 }
 
 const handleMouseDown = (e: any) => {

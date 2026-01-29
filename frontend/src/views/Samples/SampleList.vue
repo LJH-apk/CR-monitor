@@ -163,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
@@ -172,6 +172,7 @@ import * as fabric from 'fabric'
 import { sampleApi } from '@/api/sample'
 import { useAuthStore } from '@/store/modules/auth'
 import type { TrainingSample } from '@/types/sample'
+import { loadAuthenticatedImage, revokeBlobUrl } from '@/utils/imageLoader'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -186,8 +187,19 @@ const currentSample = ref<TrainingSample | null>(null)
 const detailCanvasRef = ref<HTMLCanvasElement | null>(null)
 const detailCanvas = ref<Canvas | null>(null)
 
+// 存储样本图片的blob URL
+const imageBlobUrls = ref<Map<number, string>>(new Map())
+
 onMounted(() => {
   loadSamples()
+})
+
+onUnmounted(() => {
+  // 清理所有blob URL
+  imageBlobUrls.value.forEach((blobUrl) => {
+    revokeBlobUrl(blobUrl)
+  })
+  imageBlobUrls.value.clear()
 })
 
 const goBack = () => {
@@ -199,6 +211,9 @@ const loadSamples = async () => {
   try {
     const response = await sampleApi.getAll(statusFilter.value || undefined)
     samples.value = response.data
+
+    // 异步加载所有样本图片
+    await loadSampleImages()
   } catch (error) {
     ElMessage.error('加载样本列表失败')
   } finally {
@@ -206,8 +221,21 @@ const loadSamples = async () => {
   }
 }
 
+// 加载样本图片（使用JWT认证）
+const loadSampleImages = async () => {
+  for (const sample of samples.value) {
+    try {
+      const blobUrl = await loadAuthenticatedImage(`/files/samples/${sample.id}`)
+      imageBlobUrls.value.set(sample.id, blobUrl)
+    } catch (error) {
+      console.error(`Failed to load image for sample ${sample.id}:`, error)
+    }
+  }
+}
+
 const getSampleImageUrl = (sample: TrainingSample): string => {
-  return `/api/storage/training-samples/${sample.userId}/${sample.storedFilename}`
+  // 返回blob URL，如果还没加载则返回空字符串
+  return imageBlobUrls.value.get(sample.id) || ''
 }
 
 const annotateSample = (id: number) => {
@@ -237,12 +265,18 @@ watch(showDetailDialog, async (newVal) => {
 })
 
 // 初始化详情画布（只读模式）
-const initDetailCanvas = () => {
+const initDetailCanvas = async () => {
   if (!detailCanvasRef.value || !currentSample.value) return
 
-  const imgUrl = `/api/storage/training-samples/${currentSample.value.userId}/${currentSample.value.storedFilename}`
+  try {
+    // 使用认证的图片加载
+    const blobUrl = imageBlobUrls.value.get(currentSample.value.id)
+    if (!blobUrl) {
+      ElMessage.error('图片加载失败')
+      return
+    }
 
-  FabricImage.fromURL(imgUrl).then((img) => {
+    const img = await FabricImage.fromURL(blobUrl)
     if (!detailCanvasRef.value || !currentSample.value) return
 
     const imgWidth = img.width || 800
@@ -328,10 +362,10 @@ const initDetailCanvas = () => {
     }
 
     detailCanvas.value.renderAll()
-  }).catch((error) => {
+  } catch (error) {
     console.error('Failed to load image:', error)
     ElMessage.error('图片加载失败')
-  })
+  }
 }
 
 const handleCommand = async (command: { action: string; id: number }) => {

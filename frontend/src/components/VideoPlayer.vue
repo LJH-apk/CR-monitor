@@ -53,6 +53,7 @@ import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import { Warning } from '@element-plus/icons-vue'
 import type { Alert } from '@/types/alert'
+import { useAuthStore } from '@/store/modules/auth'
 
 interface ParsedAlert {
   behavior: string
@@ -70,6 +71,7 @@ const videoRef = ref<HTMLVideoElement>()
 let player: any = null
 const showAlertOverlay = ref(false)
 const currentAlert = ref<Alert | null>(null)
+const authStore = useAuthStore()
 
 const parsedAlert = computed(() => {
   if (!currentAlert.value) {
@@ -106,6 +108,18 @@ const parsedAlert = computed(() => {
 
 onMounted(() => {
   if (videoRef.value) {
+    // 全局配置video.js的xhr请求，添加JWT认证
+    const token = authStore.token
+
+    // 配置videojs的xhr beforeRequest钩子
+    if (token && (videojs as any).Vhs) {
+      (videojs as any).Vhs.xhr.beforeRequest = function(options: any) {
+        options.headers = options.headers || {}
+        options.headers['Authorization'] = `Bearer ${token}`
+        return options
+      }
+    }
+
     player = videojs(videoRef.value, {
       controls: true,
       autoplay: false,

@@ -30,7 +30,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/storage/**").permitAll()
+                        // 安全：移除了 /storage/** 的 permitAll，现在需要认证
+                        .requestMatchers("/files/**").authenticated()  // 文件访问需要认证
                         .requestMatchers("/samples/**").authenticated()  // 样本上传所有认证用户可访问
                         .requestMatchers("/admin/users/**").hasRole("SUPER_ADMIN")  // 用户管理仅超管
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")  // 管理功能

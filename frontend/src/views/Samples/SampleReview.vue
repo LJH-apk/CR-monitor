@@ -166,6 +166,7 @@ import { Canvas, Rect, FabricImage } from 'fabric'
 import * as fabric from 'fabric'
 import { sampleApi } from '@/api/sample'
 import type { TrainingSample, Annotation } from '@/types/sample'
+import { loadAuthenticatedImage, revokeBlobUrl } from '@/utils/imageLoader'
 
 const route = useRoute()
 const router = useRouter()
@@ -176,6 +177,7 @@ const canvas = ref<Canvas | null>(null)
 const currentSample = ref<TrainingSample | null>(null)
 const annotations = ref<Annotation[]>([])
 const canvasScale = ref(1)
+const imageBlobUrl = ref<string | null>(null)
 
 // 待审核样本列表
 const pendingSamples = ref<TrainingSample[]>([])
@@ -213,6 +215,10 @@ onMounted(async () => {
 onUnmounted(() => {
   if (canvas.value) {
     canvas.value.dispose()
+  }
+  // 清理blob URL
+  if (imageBlobUrl.value) {
+    revokeBlobUrl(imageBlobUrl.value)
   }
 })
 
@@ -268,12 +274,20 @@ const loadCurrentSample = async () => {
 }
 
 // 初始化画布（只读模式）
-const initCanvas = () => {
+const initCanvas = async () => {
   if (!canvasRef.value || !currentSample.value) return
 
-  const imgUrl = `/api/storage/training-samples/${currentSample.value.userId}/${currentSample.value.storedFilename}`
+  try {
+    // 清理旧的blob URL
+    if (imageBlobUrl.value) {
+      revokeBlobUrl(imageBlobUrl.value)
+    }
 
-  FabricImage.fromURL(imgUrl).then((img) => {
+    // 使用认证的图片加载
+    const blobUrl = await loadAuthenticatedImage(`/files/samples/${currentSample.value.id}`)
+    imageBlobUrl.value = blobUrl
+
+    const img = await FabricImage.fromURL(blobUrl)
     if (!canvasRef.value) return
 
     const imgWidth = img.width || 800
@@ -322,10 +336,10 @@ const initCanvas = () => {
     // 渲染标注框（只读）
     renderAnnotations()
     canvas.value.renderAll()
-  }).catch((error) => {
+  } catch (error) {
     console.error('Failed to load image:', error)
     ElMessage.error('图片加载失败')
-  })
+  }
 }
 
 // 渲染标注框（只读模式，使用 Group）

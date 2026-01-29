@@ -3,9 +3,9 @@ spring:
     name: security-monitor
 
   datasource:
-    url: jdbc:mysql://localhost:3306/security_monitor
-    username: root
-    password: rootroot
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:security_monitor}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:rootroot}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -15,9 +15,9 @@ spring:
       max-lifetime: 1800000
 
   redis:
-    host: localhost
-    port: 6379
-    password:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
     jedis:
       pool:
         max-active: 20
@@ -53,13 +53,15 @@ server:
     context-path: /api
 
 # JWT Configuration
+# SECURITY WARNING: JWT_SECRET must be set as environment variable
+# Generate a strong secret key using: openssl rand -base64 64
 jwt:
-  secret: your-secret-key-change-this-in-production-with-at-least-256-bits
-  expiration: 86400000  # 24 hours in milliseconds
+  secret: ${JWT_SECRET:please-change-this-weak-default-key-in-production-use-at-least-256-bits-for-security}
+  expiration: ${JWT_EXPIRATION:86400000}  # 24 hours in milliseconds
 
 # Storage Configuration
 storage:
-  base-path: /Users/liujiahang/Page/backend/storage
+  base-path: ${STORAGE_BASE_PATH:/Users/liujiahang/Page/backend/storage}
   uploads: ${storage.base-path}/uploads
   transcoded: ${storage.base-path}/transcoded
   thumbnails: ${storage.base-path}/thumbnails
@@ -83,6 +85,10 @@ ai-service:
   base-url: http://localhost:5001
   timeout: 30000  # 30 seconds
   enabled: true
+
+# CORS Configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
 
 # Frame Extraction Configuration
 frame-extraction:

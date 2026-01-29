@@ -33,7 +33,10 @@
       "Bash(npm run type-check)",
       "Bash(npm run 2:*)",
       "Bash(mvn clean:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "WebSearch",
+      "WebFetch(domain:fabricjs.com)"
     ]
   }
 }

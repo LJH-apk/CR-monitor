@@ -239,7 +239,7 @@ const currentVideoSrc = computed(() => {
   if (!selectedVideoId.value) return null
   const video = videoStore.videos.find(v => v.id === selectedVideoId.value)
   if (!video || !video.hlsPath) return null
-  return `http://localhost:8080/api/storage/transcoded/${video.id}/playlist.m3u8`
+  return `http://localhost:8080/api/files/videos/${video.id}/playlist.m3u8`
 })
 
 // 过滤当前视频的实时预警
