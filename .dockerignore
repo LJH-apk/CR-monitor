@@ -1,0 +1,14 @@
+storage/
+.git/
+*.log
+.env
+.DS_Store
+node_modules/
+target/
+dist/
+venv/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+*.iml
