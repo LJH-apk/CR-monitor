@@ -5,7 +5,7 @@ WORKDIR /build
 
 # 复制package文件并安装依赖
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # 复制源码并构建
 COPY . .
