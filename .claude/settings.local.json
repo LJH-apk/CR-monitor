@@ -36,7 +36,16 @@
       "Bash(grep:*)",
       "Bash(npm run build:*)",
       "WebSearch",
-      "WebFetch(domain:fabricjs.com)"
+      "WebFetch(domain:fabricjs.com)",
+      "Bash(du:*)",
+      "Bash(chmod:*)",
+      "Bash(docker-compose config:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose --version)",
+      "Bash(/Applications/Docker.app/Contents/Resources/bin/docker --version:*)",
+      "Bash(sudo rm:*)",
+      "Bash(sudo ln:*)",
+      "Bash(ls:*)"
     ]
   }
 }
