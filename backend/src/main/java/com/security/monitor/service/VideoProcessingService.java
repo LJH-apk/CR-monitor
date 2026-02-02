@@ -27,9 +27,6 @@ public class VideoProcessingService {
     @Autowired
     private CacheService cacheService;
 
-    @Autowired
-    private FrameAnalysisService frameAnalysisService;
-
     @Value("${storage.transcoded}")
     private String transcodedPath;
 
@@ -70,8 +67,7 @@ public class VideoProcessingService {
 
             logger.info("Transcoding completed for video ID: {}", videoId);
 
-            // Start frame analysis
-            frameAnalysisService.analyzeVideo(videoId);
+            // 不再自动启动帧分析，改为播放时实时分析
 
         } catch (Exception e) {
             logger.error("Transcoding failed for video ID: {}", videoId, e);

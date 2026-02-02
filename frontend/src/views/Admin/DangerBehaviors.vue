@@ -22,6 +22,7 @@
       <el-menu-item index="/admin/videos">视频管理</el-menu-item>
       <el-menu-item index="/admin/behaviors">危险行为管理</el-menu-item>
       <el-menu-item index="/admin/thresholds">告警阈值配置</el-menu-item>
+      <el-menu-item index="/admin/models">模型管理</el-menu-item>
       <el-menu-item v-if="authStore.isSuperAdmin()" index="/admin/users">用户管理</el-menu-item>
     </el-menu>
 

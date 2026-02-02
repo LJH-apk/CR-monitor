@@ -45,6 +45,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresSuperAdmin: true }
     },
     {
+      path: '/admin/models',
+      name: 'ModelManagement',
+      component: () => import('@/views/Admin/ModelManagement.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
       path: '/samples/upload',
       name: 'SampleUpload',
       component: () => import('@/views/Samples/SampleUpload.vue'),

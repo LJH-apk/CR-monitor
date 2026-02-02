@@ -47,7 +47,10 @@
     </el-card>
 
     <div class="copyright">
-      <p>© 2026 智能监控系统 版权所有 刘佳航 V0.1.2</p>
+      <p>© 2026 智能监控系统 版权所有 刘佳航 V0.3.0</p>
+      <p class="icp-info">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">京ICP备XXXXXXXX号-1</a>
+      </p>
     </div>
   </div>
 </template>
@@ -175,5 +178,21 @@ const handleLogin = async () => {
   font-size: 14px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   font-weight: 500;
+}
+
+.icp-info {
+  margin-top: 8px !important;
+  font-size: 12px !important;
+}
+
+.icp-info a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.icp-info a:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 </style>

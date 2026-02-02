@@ -1,0 +1,15 @@
+{
+  "current_version": "v0",
+  "versions": {
+    "v0": {
+      "name": "baseline",
+      "description": "预训练基础模型",
+      "created_at": "2026-02-02T13:55:02.826401",
+      "model_file": "yolo11n.pt",
+      "metrics": {},
+      "training_samples": 0,
+      "is_active": true
+    }
+  },
+  "training_history": []
+}

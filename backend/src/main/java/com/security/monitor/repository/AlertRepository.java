@@ -20,4 +20,6 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findRecentAlerts(@Param("startTime") LocalDateTime startTime);
 
     List<Alert> findTop100ByOrderByCreatedAtDesc();
+
+    long countByVideoId(Long videoId);
 }

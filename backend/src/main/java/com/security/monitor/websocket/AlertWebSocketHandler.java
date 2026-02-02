@@ -1,5 +1,8 @@
 package com.security.monitor.websocket;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.security.monitor.service.RealtimeAnalysisService;
 import com.security.monitor.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +14,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -23,6 +27,12 @@ public class AlertWebSocketHandler extends TextWebSocketHandler {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private RealtimeAnalysisService realtimeAnalysisService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -47,8 +57,41 @@ public class AlertWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // Handle incoming messages if needed
-        logger.debug("Received message: {}", message.getPayload());
+        Long userId = extractUserId(session);
+        if (userId == null) {
+            return;
+        }
+
+        try {
+            Map<String, Object> data = objectMapper.readValue(
+                    message.getPayload(),
+                    new TypeReference<Map<String, Object>>() {}
+            );
+
+            String type = (String) data.get("type");
+
+            if ("playback_progress".equals(type)) {
+                // 处理播放进度消息，触发实时分析
+                Long videoId = ((Number) data.get("videoId")).longValue();
+                Double currentTime = ((Number) data.get("currentTime")).doubleValue();
+
+                logger.debug("收到播放进度: userId={}, videoId={}, time={}s", userId, videoId, currentTime);
+
+                // 异步实时分析
+                realtimeAnalysisService.analyzeAtPlaybackTime(userId, videoId, currentTime);
+
+            } else if ("stop_playback".equals(type)) {
+                // 停止播放，重置分析状态
+                Long videoId = ((Number) data.get("videoId")).longValue();
+                realtimeAnalysisService.resetAnalysisState(userId, videoId);
+
+            } else {
+                logger.debug("Received unknown message type: {}", type);
+            }
+
+        } catch (Exception e) {
+            logger.error("Failed to handle WebSocket message: {}", message.getPayload(), e);
+        }
     }
 
     public void sendAlertToUser(Long userId, String message) {

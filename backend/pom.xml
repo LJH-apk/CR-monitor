@@ -14,7 +14,7 @@
 
     <groupId>com.security</groupId>
     <artifactId>security-monitor</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0.0</version>
     <name>Security Monitor Backend</name>
     <description>Intelligent Security Monitoring System Backend</description>
 

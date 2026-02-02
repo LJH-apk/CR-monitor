@@ -1,20 +1,14 @@
-
+# 智能安全监控系统
 
 <div align="center">
 
-# 智能安全监控系统
-
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
-![Java](https://img.shields.io/badge/Java-18-orange.svg)
+![Java](https://img.shields.io/badge/Java-17-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.1-brightgreen.svg)
 ![Vue](https://img.shields.io/badge/Vue-3-green.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)
 
-一个基于AI的全栈视频监控平台，具备实时危险检测和智能预警功能
+基于 AI 的全栈视频监控平台，具备实时危险检测和智能预警功能
 
-[功能特性](#-功能特性) • [快速开始](#-快速开始) • [技术栈](#-技术栈) • [系统架构](#-系统架构) • [使用指南](#-使用指南)
-
-本项目 © 2026 刘佳航 保留所有权利。
 </div>
 
 ---
@@ -28,58 +22,42 @@
 - [环境要求](#-环境要求)
 - [快速开始](#-快速开始)
 - [项目结构](#-项目结构)
-- [配置说明](#-配置说明)
 - [使用指南](#-使用指南)
-- [API文档](#-api文档)
+- [API 文档](#-api-文档)
 - [常见问题](#-常见问题)
-- [开发路线图](#-开发路线图)
-- [贡献指南](#-贡献指南)
 - [许可证](#-许可证)
 
 ---
 
 ## 🎯 项目简介
 
-智能安全监控系统是一个现代化的视频监控解决方案，集成了AI驱动的危险行为检测功能。系统能够实时分析视频内容，自动识别潜在的安全威胁（如打架、摔倒、非法入侵等），并通过WebSocket实时推送预警信息。
-
-> **⚠️ 重要声明**
->
-> 本项目采用 **GPL-3.0 许可证**，仅供个人学习、研究和交流使用。
-> 
-> **注意：** 使用本项目即表示您同意遵守GPL-3.0许可证条款以及下述特别限制
-> 
-> **严格禁止**：
-> - ❌ 用于任何形式的比赛、评奖、竞赛活动
-> - ❌ 作为原创作品提交给教育机构或比赛平台
-> - ❌ 声称对本项目拥有原创著作权
->
-> 详见 [许可证](#-许可证) 章节
+智能安全监控系统是一个现代化的视频监控解决方案，集成了 AI 驱动的危险行为检测功能。系统能够实时分析视频内容，自动识别潜在的安全威胁（如打架、摔倒、非法入侵等），并通过 WebSocket 实时推送预警信息。
 
 ### 核心亮点
 
-- 🤖 **AI智能分析**：集成先进的AI模型进行视频内容分析
-- ⚡ **实时预警**：基于WebSocket的毫秒级预警推送
-- 🎬 **视频转码**：自动将上传视频转换为HLS流媒体格式
+- 🤖 **AI 智能分析**：集成 YOLO + Qwen 多模态大模型进行视频内容分析
+- ⚡ **实时预警**：基于 WebSocket 的毫秒级预警推送
+- 🎬 **视频转码**：自动将上传视频转换为 HLS 流媒体格式
 - 📊 **数据可视化**：直观的图表展示预警统计数据
-- 🔐 **安全认证**：基于JWT的用户认证和权限管理
-- 🎨 **现代UI**：响应式设计，支持多种设备访问
+- 🔐 **权限管理**：三级权限体系（普通用户/管理员/超级管理员）
+- 🎨 **现代 UI**：响应式设计，支持多种设备访问
 
 ---
 
 ## ✨ 功能特性
 
 ### 视频管理
-- ✅ 视频上传（支持最大500MB）
-- ✅ 自动HLS转码
+- ✅ 视频上传（支持最大 500MB）
+- ✅ 自动 HLS 转码
 - ✅ 缩略图生成
 - ✅ 视频列表管理
-- ✅ 视频播放控制
+- ✅ 实时播放控制
 
-### AI分析
+### AI 分析
 - ✅ 实时帧提取和分析
 - ✅ 多种危险行为识别（打架、摔倒、入侵、吸烟、火灾等）
 - ✅ 置信度评分
-- ✅ 分析进度实时显示
+- ✅ 连续帧检测机制（减少误报）
 - ✅ 智能限流机制
 
 ### 预警系统
@@ -89,24 +67,18 @@
 - ✅ 历史预警查询
 - ✅ 预警统计分析
 
-### 管理后台
-- ✅ 危险行为配置
-- ✅ 预警阈值设置
-- ✅ 用户权限管理
-- ✅ 系统监控面板
-
 ### 权限系统
-- ✅ 三级权限体系（普通用户/管理员/超级管理员）
+- ✅ 三级权限体系（USER/ADMIN/SUPER_ADMIN）
 - ✅ 基于角色的访问控制（RBAC）
-- ✅ 用户账户管理（创建、编辑、删除）
+- ✅ 用户账户管理
 - ✅ 角色权限分配
 
 ### 训练样本管理
-- ✅ 图片样本上传（支持JPG/PNG格式）
+- ✅ 图片样本上传（支持 JPG/PNG）
 - ✅ 矩形边界框标注工具
 - ✅ 多标注框支持
 - ✅ 样本状态管理（待标注/已标注/已审核/已拒绝）
-- ✅ COCO JSON格式导出（用于YOLO增量学习）
+- ✅ COCO JSON 格式导出（用于 YOLO 增量学习）
 - ✅ 样本审核流程
 
 ---
@@ -115,7 +87,7 @@
 
 ### 后端技术
 - **框架**: Spring Boot 3.2.1
-- **语言**: Java 18
+- **语言**: Java 17
 - **数据库**: MySQL 8.0+
 - **缓存**: Redis 7.0+
 - **ORM**: Spring Data JPA
@@ -127,66 +99,57 @@
 - **框架**: Vue 3
 - **语言**: TypeScript 5
 - **构建工具**: Vite
-- **UI组件**: Element Plus
+- **UI 组件**: Element Plus
 - **状态管理**: Pinia
 - **路由**: Vue Router
-- **HTTP客户端**: Axios
+- **HTTP 客户端**: Axios
 - **视频播放**: Video.js
 - **图表**: ECharts
 
-### 开发工具
-- **构建**: Maven 3.6+
-- **包管理**: npm / yarn
-- **版本控制**: Git
-- **IDE**: IntelliJ IDEA / VS Code
+### AI 服务
+- **语言**: Python 3.10+
+- **框架**: Flask
+- **目标检测**: YOLO11
+- **多模态分析**: Qwen-VL
 
 ---
 
 ## 🏗 系统架构
 
-### 整体架构
-
-```mermaid
-graph TB
-    subgraph 前端层["前端层 (Vue 3)"]
-        Dashboard[Dashboard 页面]
-        Admin[Admin 管理]
-        Video[Video 播放]
-        Alert[Alert 面板]
-    end
-
-    subgraph 后端层["后端层 (Spring Boot)"]
-        Controller[Controller 层]
-        Service[Service 层]
-        Repository[Repository 层]
-        Entity[Entity 层]
-
-        Controller --> Service
-        Service --> Repository
-        Repository --> Entity
-    end
-
-    subgraph 数据层["数据层"]
-        MySQL[(MySQL 数据库)]
-        Redis[(Redis 缓存)]
-        FFmpeg[FFmpeg 转码引擎]
-        AI[AI Service AI分析]
-    end
-
-    前端层 <-->|HTTP/WebSocket| 后端层
-    后端层 --> 数据层
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        前端层 (Vue 3)                        │
+│  Dashboard │ Video Player │ Alert Panel │ Admin Console    │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ HTTP/WebSocket
+┌─────────────────────────▼───────────────────────────────────┐
+│                    后端层 (Spring Boot)                      │
+│  Controller → Service → Repository → Entity                 │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+┌───────▼────┐   ┌────────▼────────┐   ┌───▼──────┐
+│   MySQL    │   │     Redis       │   │  FFmpeg  │
+│  数据持久化  │   │   缓存加速      │   │ 视频转码  │
+└────────────┘   └─────────────────┘   └──────────┘
+                          │
+                 ┌────────▼────────┐
+                 │   AI Service    │
+                 │ YOLO + Qwen-VL  │
+                 └─────────────────┘
 ```
 
 ### 视频处理流程
 
-```mermaid
-flowchart LR
-    A[上传视频] --> B[存储到本地]
-    B --> C[异步转码 FFmpeg]
-    C --> D[生成HLS]
-    D --> E[AI分析]
-    E --> F[生成预警]
-    F --> G[WebSocket推送]
+```
+上传视频 → 存储到本地 → FFmpeg 转码 → 生成 HLS
+                                        ↓
+                                   AI 帧分析
+                                        ↓
+                                   生成预警
+                                        ↓
+                              WebSocket 实时推送
 ```
 
 ---
@@ -194,17 +157,18 @@ flowchart LR
 ## 📦 环境要求
 
 ### 必需环境
-- **Java**: 18 或更高版本
+- **Java**: 17 或更高版本
 - **Node.js**: 18 或更高版本
 - **Maven**: 3.6 或更高版本
 - **MySQL**: 8.0 或更高版本
 - **Redis**: 7.0 或更高版本
 - **FFmpeg**: 5.0 或更高版本
+- **Python**: 3.10 或更高版本（AI 服务）
 
 ### 推荐配置
-- **CPU**: 4核心或以上
-- **内存**: 8GB或以上
-- **磁盘**: 50GB可用空间（用于视频存储）
+- **CPU**: 4 核心或以上
+- **内存**: 8GB 或以上
+- **磁盘**: 50GB 可用空间（用于视频存储）
 
 ---
 
@@ -220,17 +184,17 @@ cd Page
 ### 2. 配置数据库
 
 ```bash
-# 登录MySQL
+# 登录 MySQL
 mysql -u root -p
 
 # 创建数据库
 CREATE DATABASE security_monitor CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 退出MySQL
+# 退出
 exit
 ```
 
-### 3. 配置Redis
+### 3. 配置 Redis
 
 ```bash
 # macOS
@@ -239,11 +203,11 @@ brew services start redis
 # Linux
 sudo systemctl start redis
 
-# 验证Redis连接
+# 验证连接
 redis-cli ping  # 应返回 PONG
 ```
 
-### 4. 安装FFmpeg
+### 4. 安装 FFmpeg
 
 ```bash
 # macOS
@@ -256,24 +220,22 @@ sudo apt-get install ffmpeg
 ffmpeg -version
 ```
 
-### 5. 配置后端
+### 5. 启动后端
 
 ```bash
 cd backend
 
-# 修改配置文件（如需要）
+# 修改配置（如需要）
 # vim src/main/resources/application.yml
 
-# 编译项目
+# 编译并运行
 mvn clean install -DskipTests
-
-# 运行后端
 mvn spring-boot:run
 ```
 
-后端将在 `http://localhost:8080` 启动
+后端将在 `http://localhost:8080/api` 启动
 
-### 6. 配置前端
+### 6. 启动前端
 
 ```bash
 cd frontend
@@ -287,11 +249,31 @@ npm run dev
 
 前端将在 `http://localhost:5173` 启动
 
-### 7. 访问系统
+### 7. 启动 AI 服务（可选）
+
+```bash
+cd ai-service
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 下载模型文件（首次运行）
+# YOLO 模型会自动下载
+# Qwen 模型需要配置 API Key
+
+# 启动服务
+python app.py
+```
+
+AI 服务将在 `http://localhost:5001` 启动
+
+### 8. 访问系统
 
 打开浏览器访问：`http://localhost:5173`
 
-**默认账号**：
+---
+
+## 🔑 默认账号
 
 | 角色 | 用户名 | 密码 | 权限说明 |
 |------|--------|------|----------|
@@ -305,251 +287,74 @@ npm run dev
 
 ```
 Page/
-├── backend/                              # Spring Boot 后端服务
+├── backend/                    # Spring Boot 后端服务
+│   ├── src/main/
+│   │   ├── java/com/security/monitor/
+│   │   │   ├── config/        # 配置类（Security, WebSocket, Redis 等）
+│   │   │   ├── controller/    # REST 控制器
+│   │   │   ├── dto/           # 数据传输对象
+│   │   │   ├── entity/        # JPA 实体类
+│   │   │   ├── repository/    # 数据访问层
+│   │   │   ├── service/       # 业务逻辑层
+│   │   │   ├── util/          # 工具类
+│   │   │   └── websocket/     # WebSocket 处理器
+│   │   └── resources/
+│   │       ├── application.yml         # 应用配置
+│   │       └── db/migration/           # Flyway 数据库迁移脚本
+│   └── storage/               # 文件存储目录
+│       ├── uploads/           # 原始视频
+│       ├── transcoded/        # HLS 视频
+│       ├── thumbnails/        # 缩略图
+│       └── training-samples/  # 训练样本
+│
+├── frontend/                   # Vue 3 前端应用
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/security/monitor/
-│   │   │   │   ├── SecurityMonitorApplication.java  # 应用入口
-│   │   │   │   ├── config/                          # 配置类
-│   │   │   │   │   ├── AsyncConfig.java            # 异步任务配置
-│   │   │   │   │   ├── CorsConfig.java             # 跨域配置
-│   │   │   │   │   ├── JwtAuthenticationFilter.java # JWT过滤器
-│   │   │   │   │   ├── RedisConfig.java            # Redis配置
-│   │   │   │   │   ├── SecurityConfig.java         # 安全配置
-│   │   │   │   │   ├── WebConfig.java              # Web配置
-│   │   │   │   │   └── WebSocketConfig.java        # WebSocket配置
-│   │   │   │   ├── controller/                      # REST控制器
-│   │   │   │   │   ├── AlertController.java        # 告警管理
-│   │   │   │   │   ├── AuthController.java         # 认证登录
-│   │   │   │   │   ├── DangerBehaviorController.java # 危险行为
-│   │   │   │   │   ├── DashboardController.java    # 仪表盘
-│   │   │   │   │   ├── ThresholdController.java    # 阈值配置
-│   │   │   │   │   ├── TrainingSampleController.java # 训练样本
-│   │   │   │   │   ├── UserManagementController.java # 用户管理
-│   │   │   │   │   └── VideoController.java        # 视频管理
-│   │   │   │   ├── dto/                             # 数据传输对象
-│   │   │   │   │   ├── AnnotationDTO.java          # 标注DTO
-│   │   │   │   │   ├── CocoExportDTO.java          # COCO导出DTO
-│   │   │   │   │   ├── LoginRequest.java           # 登录请求
-│   │   │   │   │   ├── TrainingSampleDTO.java      # 训练样本DTO
-│   │   │   │   │   └── UserDTO.java                # 用户DTO
-│   │   │   │   ├── entity/                          # JPA实体类
-│   │   │   │   │   ├── Alert.java                  # 告警记录
-│   │   │   │   │   ├── AlertThreshold.java         # 告警阈值
-│   │   │   │   │   ├── DangerBehavior.java         # 危险行为
-│   │   │   │   │   ├── SampleAnnotation.java       # 样本标注
-│   │   │   │   │   ├── TrainingSample.java         # 训练样本
-│   │   │   │   │   ├── User.java                   # 用户
-│   │   │   │   │   └── Video.java                  # 视频
-│   │   │   │   ├── repository/                      # 数据访问层
-│   │   │   │   │   ├── AlertRepository.java
-│   │   │   │   │   ├── DangerBehaviorRepository.java
-│   │   │   │   │   ├── TrainingSampleRepository.java
-│   │   │   │   │   ├── UserRepository.java
-│   │   │   │   │   └── VideoRepository.java
-│   │   │   │   ├── service/                         # 业务逻辑层
-│   │   │   │   │   ├── AIServiceClient.java        # AI服务客户端
-│   │   │   │   │   ├── AlertPushService.java       # 告警推送
-│   │   │   │   │   ├── AuthService.java            # 认证服务
-│   │   │   │   │   ├── CacheService.java           # 缓存服务
-│   │   │   │   │   ├── FrameAnalysisService.java   # 帧分析
-│   │   │   │   │   ├── TrainingSampleService.java  # 样本服务
-│   │   │   │   │   ├── UserManagementService.java  # 用户管理
-│   │   │   │   │   └── VideoProcessingService.java # 视频处理
-│   │   │   │   ├── util/                            # 工具类
-│   │   │   │   │   ├── FFmpegUtil.java             # FFmpeg封装
-│   │   │   │   │   ├── FrameExtractor.java         # 帧提取
-│   │   │   │   │   └── JwtUtil.java                # JWT工具
-│   │   │   │   └── websocket/                       # WebSocket
-│   │   │   │       ├── AlertWebSocketHandler.java  # 告警处理器
-│   │   │   │       └── WebSocketSessionManager.java # 会话管理
-│   │   │   └── resources/
-│   │   │       ├── application.yml                  # 应用配置
-│   │   │       └── db/migration/                    # Flyway迁移脚本
-│   │   │           ├── V1__create_users_table.sql
-│   │   │           ├── V2__create_videos_table.sql
-│   │   │           ├── V3__create_danger_behaviors_table.sql
-│   │   │           ├── V4__create_alert_thresholds_table.sql
-│   │   │           ├── V5__create_alerts_table.sql
-│   │   │           ├── V6__create_alert_statistics_table.sql
-│   │   │           ├── V7__add_ai_detection_fields.sql
-│   │   │           ├── V8__add_super_admin_role.sql
-│   │   │           └── V9__create_training_samples_tables.sql
-│   │   └── test/                                    # 测试代码
-│   ├── storage/                                     # 文件存储
-│   │   ├── uploads/                                # 原始视频
-│   │   ├── transcoded/                             # HLS视频
-│   │   ├── thumbnails/                             # 缩略图
-│   │   └── training-samples/                       # 训练样本
-│   └── pom.xml                                      # Maven配置
+│   │   ├── api/               # API 接口层
+│   │   ├── components/        # 可复用组件
+│   │   ├── composables/       # 组合式函数
+│   │   ├── router/            # 路由配置
+│   │   ├── store/             # Pinia 状态管理
+│   │   ├── types/             # TypeScript 类型定义
+│   │   └── views/             # 页面组件
+│   │       ├── Dashboard.vue  # 主控制台
+│   │       ├── Login.vue      # 登录页
+│   │       ├── Admin/         # 管理页面
+│   │       └── Samples/       # 样本管理
+│   └── package.json
 │
-├── frontend/                             # Vue 3 前端应用
-│   ├── src/
-│   │   ├── api/                                     # API接口层
-│   │   │   ├── alert.ts                            # 告警API
-│   │   │   ├── auth.ts                             # 认证API
-│   │   │   ├── axios.ts                            # Axios配置
-│   │   │   ├── config.ts                           # 配置API
-│   │   │   ├── sample.ts                           # 样本API
-│   │   │   ├── user.ts                             # 用户API
-│   │   │   └── video.ts                            # 视频API
-│   │   ├── assets/                                  # 静态资源
-│   │   │   └── background.png                      # 登录背景图
-│   │   ├── components/                              # 可复用组件
-│   │   │   ├── AlertChart.vue                      # 告警图表
-│   │   │   ├── AlertPanel.vue                      # 告警面板
-│   │   │   └── VideoPlayer.vue                     # 视频播放器
-│   │   ├── composables/                             # 组合式函数
-│   │   │   └── useWebSocket.ts                     # WebSocket Hook
-│   │   ├── router/                                  # 路由配置
-│   │   │   └── index.ts                            # 路由定义
-│   │   ├── store/                                   # Pinia状态管理
-│   │   │   ├── index.ts                            # Store入口
-│   │   │   └── modules/
-│   │   │       ├── alert.ts                        # 告警状态
-│   │   │       ├── auth.ts                         # 认证状态
-│   │   │       ├── config.ts                       # 配置状态
-│   │   │       └── video.ts                        # 视频状态
-│   │   ├── types/                                   # TypeScript类型
-│   │   │   ├── alert.ts                            # 告警类型
-│   │   │   ├── sample.ts                           # 样本类型
-│   │   │   ├── user.ts                             # 用户类型
-│   │   │   └── video.ts                            # 视频类型
-│   │   ├── views/                                   # 页面组件
-│   │   │   ├── Dashboard.vue                       # 主控制台
-│   │   │   ├── Login.vue                           # 登录页
-│   │   │   ├── Admin/                              # 管理页面
-│   │   │   │   ├── DangerBehaviors.vue            # 危险行为管理
-│   │   │   │   ├── Thresholds.vue                 # 阈值配置
-│   │   │   │   ├── UserManagement.vue             # 用户管理
-│   │   │   │   └── VideoManagement.vue            # 视频管理
-│   │   │   └── Samples/                            # 样本管理
-│   │   │       ├── SampleAnnotation.vue           # 样本标注
-│   │   │       ├── SampleList.vue                 # 样本列表
-│   │   │       ├── SampleReview.vue               # 样本审核
-│   │   │       └── SampleUpload.vue               # 样本上传
-│   │   ├── App.vue                                  # 根组件
-│   │   └── main.ts                                  # 应用入口
-│   ├── index.html                                   # HTML入口
-│   ├── package.json                                 # npm配置
-│   ├── vite.config.ts                               # Vite配置
-│   └── tsconfig.json                                # TypeScript配置
+├── ai-service/                 # Python AI 检测服务
+│   ├── app.py                 # Flask 应用入口
+│   ├── config.py              # 配置文件
+│   ├── requirements.txt       # Python 依赖
+│   ├── models/                # AI 模型
+│   │   ├── qwen_analyzer.py   # Qwen 分析器
+│   │   └── yolo_detector.py   # YOLO 检测器
+│   └── services/              # 业务服务
 │
-├── ai-service/                           # Python AI检测服务
-│   ├── app.py                                       # Flask应用入口
-│   ├── config.py                                    # 配置文件
-│   ├── requirements.txt                             # Python依赖
-│   ├── yolo11n.pt                                   # YOLO模型文件
-│   ├── models/                                      # AI模型
-│   │   ├── qwen_analyzer.py                        # Qwen分析器
-│   │   └── yolo_detector.py                        # YOLO检测器
-│   └── services/                                    # 业务服务
-│       ├── alert_evaluator.py                      # 告警评估
-│       └── detection_service.py                    # 检测服务
-│
-├── storage/                              # 共享文件存储
-│   ├── uploads/                                     # 用户上传视频
-│   ├── transcoded/                                  # 转码后视频
-│   └── training-samples/                            # 训练样本图片
-│
-├── CLAUDE.md                             # Claude AI项目指南
-└── README.md                             # 项目说明文档
-```
-
----
-
-## ⚙️ 配置说明
-
-### 后端配置 (application.yml)
-
-```yaml
-# 服务器配置
-server:
-  port: 8080
-  servlet:
-    context-path: /api
-
-# 数据库配置
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/security_monitor
-    username: root
-    password: your_password
-
-# Redis配置
-  data:
-    redis:
-      host: localhost
-      port: 6379
-
-# JWT配置
-jwt:
-  secret: your-secret-key
-  expiration: 86400000  # 24小时
-
-# 文件上传配置
-  servlet:
-    multipart:
-      max-file-size: 500MB
-      max-request-size: 500MB
-
-# 存储路径配置
-storage:
-  uploads: ./storage/uploads
-  transcoded: ./storage/transcoded
-  thumbnails: ./storage/thumbnails
-```
-
-### 前端配置 (vite.config.ts)
-
-```typescript
-export default defineConfig({
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      }
-    }
-  }
-})
+└── README.md                   # 项目说明文档
 ```
 
 ---
 
 ## 📖 使用指南
 
-### 1. 登录系统
+### 1. 上传视频
 
-使用默认账号登录系统：
-- 用户名：`admin`
-- 密码：`admin123`
-
-### 2. 上传视频
-
-1. 点击右上角"管理后台"按钮
-2. 进入"视频管理"页面
-3. 点击"上传视频"按钮
-4. 选择视频文件（支持MP4格式，最大500MB）
+1. 使用管理员账号登录
+2. 点击右上角"视频管理"按钮
+3. 点击"上传视频"
+4. 选择视频文件（支持 MP4，最大 500MB）
 5. 等待上传和转码完成
 
-### 3. 查看监控
+### 2. 查看监控
 
 1. 返回主控制台（Dashboard）
-2. 在视频选择下拉框中选择已上传的视频
-3. 等待AI分析完成（查看分析进度卡片）
-4. 分析完成后视频自动播放
-5. 右侧实时预警面板显示检测到的异常行为
+2. 在视频选择下拉框中选择视频
+3. 系统自动开始实时分析
+4. 右侧预警面板显示检测到的异常行为
+5. 视频播放时会实时推送预警
 
-### 4. 管理预警
-
-1. 在预警面板中查看实时预警
-2. 点击"确认"按钮确认预警
-3. 查看预警统计图表
-4. 在管理后台配置预警阈值
-
-### 5. 配置系统
+### 3. 配置系统
 
 #### 配置危险行为
 1. 进入"管理后台" → "危险行为管理"
@@ -563,53 +368,32 @@ export default defineConfig({
    - 时间窗口（秒）
    - 最大预警数量
 
-### 6. 权限系统使用
+### 4. 用户管理（仅超级管理员）
 
-#### 用户角色说明
-- **普通用户（USER）**：可以查看监控、确认预警、上传训练样本
-- **管理员（ADMIN）**：拥有普通用户权限，还可以上传视频、配置系统、审核样本
-- **超级管理员（SUPER_ADMIN）**：拥有所有权限，包括用户账户管理
+1. 进入"管理后台" → "用户管理"
+2. 可以创建、编辑、删除用户
+3. 可以修改用户角色
 
-#### 管理用户账户（仅超级管理员）
-1. 使用超级管理员账号登录（admin/admin123）
-2. 进入"管理后台" → "用户管理"
-3. 可以执行以下操作：
-   - 创建新用户账户
-   - 编辑用户信息
-   - 修改用户角色
-   - 删除用户账户
+### 5. 训练样本管理
 
-### 7. 训练样本上传
-
-#### 上传样本图片
-1. 点击顶部导航栏的"样本上传"按钮
-2. 选择或拖拽图片文件（支持JPG/PNG，最大10MB）
-3. 预览图片信息
-4. 点击"上传并标注"按钮
+#### 上传样本
+1. 点击"样本上传"按钮
+2. 选择或拖拽图片文件
+3. 点击"上传并标注"
 
 #### 标注样本
-1. 上传成功后自动跳转到标注页面
-2. 使用鼠标拖拽绘制矩形边界框
-3. 为每个边界框选择对应的危险行为类型
-4. 可选填写备注信息
-5. 点击"添加到列表"保存当前标注
-6. 完成所有标注后点击"保存标注"
-
-#### 查看和管理样本
-1. 进入"样本列表"页面
-2. 使用状态筛选器查看不同状态的样本
-3. 普通用户只能看到自己上传的样本
-4. 管理员可以查看所有样本并进行审核
+1. 使用鼠标拖拽绘制矩形边界框
+2. 为每个边界框选择危险行为类型
+3. 点击"保存标注"
 
 #### 导出训练数据（仅管理员）
-1. 进入"样本列表"页面
-2. 点击"导出COCO JSON格式"按钮
-3. 系统将导出所有已审核通过的样本
-4. 下载的JSON文件可直接用于YOLO模型训练
+1. 进入"样本列表"
+2. 点击"导出 COCO JSON 格式"
+3. 下载的 JSON 文件可用于 YOLO 模型训练
 
 ---
 
-## 🔌 API文档
+## 🔌 API 文档
 
 ### 认证接口
 
@@ -641,12 +425,6 @@ GET /api/videos
 Authorization: Bearer <token>
 ```
 
-#### 获取分析进度
-```http
-GET /api/videos/{id}/analysis-progress
-Authorization: Bearer <token>
-```
-
 ### 预警接口
 
 #### 获取视频预警
@@ -661,106 +439,27 @@ PUT /api/alerts/{id}/acknowledge
 Authorization: Bearer <token>
 ```
 
-### WebSocket接口
+### WebSocket 接口
 
 #### 连接预警推送
 ```
 ws://localhost:8080/api/ws/alerts?token=<jwt-token>
 ```
 
-### 用户管理接口（仅超级管理员）
-
-#### 获取用户列表
-```http
-GET /api/admin/users?page=0&size=10
-Authorization: Bearer <token>
-```
-
-#### 创建用户
-```http
-POST /api/admin/users
-Authorization: Bearer <token>
-Content-Type: application/json
-
+消息格式：
+```json
 {
-  "username": "newuser",
-  "password": "password123",
-  "email": "user@example.com",
-  "role": "USER"
+  "type": "alert",
+  "videoId": 1,
+  "alertData": {
+    "id": 123,
+    "videoId": 1,
+    "timestampInVideo": 45,
+    "confidence": 0.95,
+    "description": "检测到异常行为: 打架",
+    "severityLevel": 4
+  }
 }
-```
-
-#### 更新用户角色
-```http
-PUT /api/admin/users/{id}/role
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "role": "ADMIN"
-}
-```
-
-#### 删除用户
-```http
-DELETE /api/admin/users/{id}
-Authorization: Bearer <token>
-```
-
-### 训练样本接口
-
-#### 上传样本图片
-```http
-POST /api/samples/upload
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-
-file: <image-file>
-```
-
-#### 获取样本列表
-```http
-GET /api/samples?status=PENDING
-Authorization: Bearer <token>
-```
-
-#### 保存标注
-```http
-POST /api/samples/{id}/annotations
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "dangerBehaviorId": 1,
-  "xMin": 100,
-  "yMin": 150,
-  "xMax": 300,
-  "yMax": 400,
-  "notes": "可选备注"
-}
-```
-
-#### 更新样本状态（仅管理员）
-```http
-PUT /api/samples/{id}/status
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "status": "APPROVED"
-}
-```
-
-#### 导出COCO格式（仅管理员）
-```http
-GET /api/samples/export/coco
-Authorization: Bearer <token>
-```
-
-#### 删除样本
-```http
-DELETE /api/samples/{id}
-Authorization: Bearer <token>
 ```
 
 ---
@@ -769,121 +468,118 @@ Authorization: Bearer <token>
 
 ### Q1: 视频上传后无法播放？
 **A**: 请检查：
-1. FFmpeg是否正确安装
+1. FFmpeg 是否正确安装：`ffmpeg -version`
 2. 转码是否完成（查看视频状态）
 3. 存储目录权限是否正确
 
-### Q2: AI分析进度一直为0？
+### Q2: AI 分析不工作？
 **A**: 请检查：
-1. AI服务是否正常运行
-2. 视频是否转码完成
+1. AI 服务是否正常运行：`curl http://localhost:5001/health`
+2. 后端配置中 `ai-service.enabled` 是否为 `true`
 3. 查看后端日志是否有错误
 
-### Q3: WebSocket连接失败？
+### Q3: WebSocket 连接失败？
 **A**: 请检查：
-1. JWT token是否有效
-2. 后端WebSocket配置是否正确
-3. 防火墙是否阻止了WebSocket连接
+1. JWT token 是否有效
+2. 后端 WebSocket 配置是否正确
+3. 防火墙是否阻止了 WebSocket 连接
 
-### Q4: 编译时提示Java版本错误？
-**A**: 确保使用Java 17：
+### Q4: Redis 连接失败？
+**A**:
 ```bash
-# 设置JAVA_HOME
-export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+# 检查 Redis 是否运行
+redis-cli ping
 
-# 验证版本
-java -version
+# macOS 启动 Redis
+brew services start redis
+
+# Linux 启动 Redis
+sudo systemctl start redis
 ```
 
 ### Q5: 前端无法连接后端？
 **A**: 请检查：
-1. 后端是否在8080端口运行
-2. Vite代理配置是否正确
-3. CORS配置是否启用
+1. 后端是否在 8080 端口运行
+2. Vite 代理配置是否正确
+3. CORS 配置是否启用
 
 ---
 
-## 🗺 开发路线图
+## 🔧 配置说明
 
-### ~~v0.1.0 (老版本)~~
-- ✅ 基础视频上传和播放
-- ✅ AI危险行为检测
-- ✅ 实时预警推送
-- ✅ 管理后台
+### 后端配置 (application.yml)
 
-### v0.1.2 (目前版本)
-- ✅ 样本图片上传标注（施工中）
-- ✅ 三级用户权限设置
-- ✅ 样本审核管理
+```yaml
+# 数据库配置
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/security_monitor
+    username: root
+    password: your_password
 
+# Redis 配置
+  redis:
+    host: localhost
+    port: 6379
 
-### v0.2.0 (计划中)
-- ⏳ 多摄像头支持
-- ⏳ 危险行为管理
-- ⏳ 实时视频流分析
-- ⏳ 移动端适配
-- ⏳ 预警邮件通知
+# JWT 配置
+jwt:
+  secret: your-secret-key
+  expiration: 86400000  # 24 小时
 
-### v1.0.0 (未来)
-- 📋 更精细的物体识别
-- 📋 失物招领功能
+# AI 服务配置
+ai-service:
+  base-url: http://localhost:5001
+  enabled: true
 
----
+# 帧分析配置
+frame-analysis:
+  consecutive-frames: 3  # 连续帧检测阈值
+  cycle-frames: 5        # 检测周期帧数
+  realtime-interval: 2   # 实时分析间隔（秒）
+```
 
-## 🤝 贡献指南
+### 前端配置 (vite.config.ts)
 
-欢迎贡献代码！请遵循以下步骤：
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-### 代码规范
-- Java: 遵循阿里巴巴Java开发手册
-- TypeScript: 使用ESLint和Prettier
-- 提交信息: 使用语义化提交规范
+```typescript
+export default defineConfig({
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      }
+    }
+  }
+})
+```
 
 ---
 
 ## 📄 许可证
 
-本项目采用 **GNU General Public License v3.0** 许可证发布。
+本项目采用 **GPL-3.0 许可证**。
 
-### 许可说明
+### 使用限制
 
-✅您可以：
-- 学习、研究本项目的源代码和实现
-- 在符合GPL-3.0许可证的前提下修改、分发本项目
-- 在遵循"相同方式共享"原则下，基于本项目进行二次开发
+✅ 允许：
+- 学习、研究本项目的源代码
+- 在遵循 GPL-3.0 的前提下修改、分发
 
-❌ **禁止**：
-- 将本项目或其衍生作品用于参加任何形式的公开比赛、评奖、竞赛或类似活动。
-- 将本项目作为原创作品提交给任何教育机构、比赛平台或评委会。
-- 在任何场景下声称对本项目拥有原创著作权。
+❌ 禁止：
+- 用于任何形式的比赛、评奖、竞赛活动
+- 作为原创作品提交给教育机构或比赛平台
+- 声称对本项目拥有原创著作权
 
-### 署名要求
-
-使用本项目时，必须：
-1. 保留原作者署名信息
-2. 提供指向本项目的链接
-3. 注明是否对原作品进行了修改
-
-### 商业授权
-
-如需商业使用，请联系作者获取商业授权许可。
-
-有关完整许可证文本，请参阅 [GPL-3.0协议](https://www.gnu.org/licenses/gpl-3.0.html#license-text) 文件。
+详见 [GPL-3.0 协议](https://www.gnu.org/licenses/gpl-3.0.html)
 
 ---
 
 ## 📞 联系方式
 
-如有问题或建议，请通过以下方式联系：
-
 - 提交 Issue
-- 发送邮件至：[Liu18701059325@qq.com]
+- 邮件：Liu18701059325@qq.com
 
 ---
 
@@ -891,6 +587,8 @@ java -version
 
 **⭐ 如果这个项目对你有帮助，请给一个星标！**
 
-Made with ❤️ by [Liu Jiahang]
+Made with ❤️ by Liu Jiahang
+
+© 2026 版权所有
 
 </div>

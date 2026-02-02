@@ -1,6 +1,15 @@
 import apiClient from './axios'
 import type { Video, VideoUploadResponse } from '@/types/video'
 
+export interface DetectionSummary {
+  totalAlerts: number
+  isAnalyzing: boolean
+  progress: number
+  hasAlerts: boolean
+  status: 'normal' | 'alert' | 'analyzing'
+  message: string
+}
+
 export const videoApi = {
   upload(file: File) {
     const formData = new FormData()
@@ -26,5 +35,9 @@ export const videoApi = {
 
   getAnalysisProgress(id: number) {
     return apiClient.get<{ progress: number; status: string; analyzing: boolean }>(`/videos/${id}/analysis-progress`)
+  },
+
+  getDetectionSummary(id: number) {
+    return apiClient.get<DetectionSummary>(`/videos/${id}/detection-summary`)
   }
 }

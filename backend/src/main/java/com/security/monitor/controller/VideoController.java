@@ -60,6 +60,9 @@ public class VideoController {
     @Autowired
     private com.security.monitor.service.CacheService cacheService;
 
+    @Autowired
+    private com.security.monitor.repository.AlertRepository alertRepository;
+
     @Value("${storage.uploads}")
     private String uploadsPath;
 
@@ -344,5 +347,66 @@ public class VideoController {
             logger.error("Failed to get analysis progress", e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    /**
+     * 获取视频的检测摘要
+     */
+    @GetMapping("/{id}/detection-summary")
+    public ResponseEntity<java.util.Map<String, Object>> getDetectionSummary(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader) {
+
+        String token = authHeader.substring(7);
+        Long userId = jwtUtil.extractUserId(token);
+
+        // 验证用户是否有权访问该视频
+        if (!canAccessVideo(id, userId)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+
+        // 获取该视频的预警数量
+        long alertCount = alertRepository.countByVideoId(id);
+        response.put("totalAlerts", alertCount);
+
+        // 获取分析状态
+        Object progressDataObj = cacheService.get("transcoding:status:" + id);
+        boolean isAnalyzing = false;
+        int progress = 100;
+
+        if (progressDataObj != null) {
+            String progressData = progressDataObj.toString();
+            if (progressData.contains("progress")) {
+                try {
+                    int progressStart = progressData.indexOf("\"progress\":") + 11;
+                    int progressEnd = progressData.indexOf(",", progressStart);
+                    if (progressEnd == -1) progressEnd = progressData.indexOf("}", progressStart);
+                    progress = Integer.parseInt(progressData.substring(progressStart, progressEnd).trim());
+                    isAnalyzing = progress < 100;
+                } catch (Exception e) {
+                    logger.error("Failed to parse progress data", e);
+                }
+            }
+        }
+
+        response.put("isAnalyzing", isAnalyzing);
+        response.put("progress", progress);
+        response.put("hasAlerts", alertCount > 0);
+
+        // 如果分析完成且无预警，返回正常状态
+        if (!isAnalyzing && alertCount == 0) {
+            response.put("status", "normal");
+            response.put("message", "视频分析完成，未检测到异常");
+        } else if (!isAnalyzing && alertCount > 0) {
+            response.put("status", "alert");
+            response.put("message", String.format("检测到 %d 个异常", alertCount));
+        } else {
+            response.put("status", "analyzing");
+            response.put("message", "正在分析中...");
+        }
+
+        return ResponseEntity.ok(response);
     }
 }

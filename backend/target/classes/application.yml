@@ -95,6 +95,12 @@ frame-extraction:
   interval: 30  # extract 1 frame every 30 frames
   min-interval-seconds: 2  # minimum time interval between analyses
 
+# Frame Analysis Configuration
+frame-analysis:
+  consecutive-frames: 3  # 连续多少帧检测到相同异常才触发预警
+  cycle-frames: 5  # 检测周期帧数，周期内无异常则显示绿色状态
+  realtime-interval: 2  # 实时分析间隔（秒），每隔多少秒分析一次
+
 # Logging
 logging:
   level:

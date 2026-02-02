@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,14 +65,37 @@ public class FrameAnalysisService {
     @Autowired
     private FrameExtractor frameExtractor;
 
-    @Value("${frame-extraction.min-interval-seconds}")
-    private int minIntervalSeconds;
+    // 连续帧检测所需的帧数（默认3帧）
+    @Value("${frame-analysis.consecutive-frames:3}")
+    private int consecutiveFramesRequired;
 
-    // 记录每个视频的最后分析时间
-    private Map<Long, Long> lastAnalysisTime = new ConcurrentHashMap<>();
+    // 检测周期帧数（默认10帧为一个周期）
+    @Value("${frame-analysis.cycle-frames:10}")
+    private int cycleFrames;
 
     // 关键词到危险行为的映射
     private Map<String, DangerBehavior> keywordToBehaviorMap = new HashMap<>();
+
+    // 连续帧检测缓存：videoId -> (keyword -> 连续检测次数)
+    private Map<Long, Map<String, Integer>> consecutiveDetectionCount = new ConcurrentHashMap<>();
+
+    // 连续帧检测的详细信息缓存：videoId -> (keyword -> 最近的检测结果列表)
+    private Map<Long, Map<String, List<PendingAlert>>> pendingAlerts = new ConcurrentHashMap<>();
+
+    /**
+     * 待确认的预警信息
+     */
+    private static class PendingAlert {
+        ExtractedFrame frame;
+        AIDetectionResult result;
+        AIAlert aiAlert;
+
+        PendingAlert(ExtractedFrame frame, AIDetectionResult result, AIAlert aiAlert) {
+            this.frame = frame;
+            this.result = result;
+            this.aiAlert = aiAlert;
+        }
+    }
 
     @Async("analysisTaskExecutor")
     public CompletableFuture<Void> analyzeVideo(Long videoId) {
@@ -92,39 +116,73 @@ public class FrameAnalysisService {
             List<ExtractedFrame> frames = frameExtractor.extractFrames(video.getOriginalPath());
             logger.info("成功提取 {} 帧", frames.size());
 
+            if (frames.isEmpty()) {
+                logger.warn("未提取到任何帧，跳过分析");
+                return CompletableFuture.completedFuture(null);
+            }
+
             // 2. 初始化关键词映射
             initializeKeywordMapping();
 
-            // 3. 对每一帧进行AI检测
-            int processedFrames = 0;
-            for (ExtractedFrame frame : frames) {
-                // 检查时间间隔
-                if (!shouldAnalyze(videoId)) {
-                    continue;
-                }
+            // 3. 初始化连续帧检测缓存
+            consecutiveDetectionCount.put(videoId, new ConcurrentHashMap<>());
+            pendingAlerts.put(videoId, new ConcurrentHashMap<>());
 
+            // 4. 对每一帧进行AI检测（帧已经按间隔提取，无需再做时间间隔控制）
+            int processedFrames = 0;
+            int cycleFrameCount = 0;  // 当前周期内已处理的帧数
+            boolean cycleHasAlert = false;  // 当前周期内是否有预警
+
+            for (ExtractedFrame frame : frames) {
                 try {
                     // 调用AI服务
                     AIDetectionResponse response = aiServiceClient.detect(frame.getBase64Image());
 
                     // 处理检测结果
                     if (response != null && response.getData() != null) {
-                        processDetectionResults(video, frame, response);
+                        boolean hasAlert = processDetectionResultsWithConsecutive(video, frame, response);
+                        if (hasAlert) {
+                            cycleHasAlert = true;
+                        }
                     }
 
-                    // 更新最后分析时间
-                    lastAnalysisTime.put(videoId, System.currentTimeMillis());
                     processedFrames++;
+                    cycleFrameCount++;
+
+                    // 检查是否完成一个检测周期
+                    if (cycleFrameCount >= cycleFrames) {
+                        if (!cycleHasAlert) {
+                            // 周期内无异常，推送绿色状态
+                            alertPushService.pushNormalStatus(videoId, cycleFrameCount, video.getUserId());
+                            logger.info("检测周期完成，无异常: videoId={}, frames={}", videoId, cycleFrameCount);
+                        }
+                        // 重置周期计数
+                        cycleFrameCount = 0;
+                        cycleHasAlert = false;
+                        // 清理连续检测计数（新周期开始）
+                        consecutiveDetectionCount.get(videoId).clear();
+                        pendingAlerts.get(videoId).clear();
+                    }
 
                     // 更新进度
-                    if (processedFrames % 5 == 0) {
-                        updateAnalysisProgress(videoId, processedFrames, frames.size());
-                    }
+                    updateAnalysisProgress(videoId, processedFrames, frames.size());
+
+                    logger.info("已分析帧 {}/{}", processedFrames, frames.size());
 
                 } catch (Exception e) {
                     logger.error("帧分析失败: {}", frame.getFileName(), e);
                 }
             }
+
+            // 处理最后一个不完整的周期
+            if (cycleFrameCount > 0 && !cycleHasAlert) {
+                alertPushService.pushNormalStatus(videoId, cycleFrameCount, video.getUserId());
+                logger.info("最后检测周期完成，无异常: videoId={}, frames={}", videoId, cycleFrameCount);
+            }
+
+            // 清理缓存
+            consecutiveDetectionCount.remove(videoId);
+            pendingAlerts.remove(videoId);
 
             logger.info("视频分析完成: {}, 处理了 {} 帧", videoId, processedFrames);
 
@@ -136,10 +194,18 @@ public class FrameAnalysisService {
     }
 
     /**
-     * 处理AI检测结果
+     * 处理AI检测结果（连续帧检测逻辑）
+     * @return 是否产生了预警
      */
-    private void processDetectionResults(Video video, ExtractedFrame frame, AIDetectionResponse response) {
+    private boolean processDetectionResultsWithConsecutive(Video video, ExtractedFrame frame, AIDetectionResponse response) {
         logger.info("处理AI检测结果，共 {} 个检测对象", response.getData().size());
+
+        boolean hasAlert = false;
+        Map<String, Integer> videoConsecutiveCount = consecutiveDetectionCount.get(video.getId());
+        Map<String, List<PendingAlert>> videoPendingAlerts = pendingAlerts.get(video.getId());
+
+        // 记录本帧检测到的关键词
+        List<String> detectedKeywords = new ArrayList<>();
 
         for (AIDetectionResult result : response.getData()) {
             logger.debug("检测对象: detection={}, analysis={}",
@@ -148,72 +214,119 @@ public class FrameAnalysisService {
 
             // 检查是否有预警
             if (result.getAlerts() != null && !result.getAlerts().isEmpty()) {
-                logger.info("检测到 {} 个预警", result.getAlerts().size());
-
                 for (AIAlert aiAlert : result.getAlerts()) {
-                    logger.info("处理预警: keyword={}, severity={}, score={}",
-                        aiAlert.getKeyword(), aiAlert.getSeverity(), aiAlert.getCombinedScore());
+                    String keyword = aiAlert.getKeyword();
+                    detectedKeywords.add(keyword);
 
-                    try {
-                        // 创建预警记录
-                        Alert alert = createAlertFromAI(video, frame, result, aiAlert);
-                        logger.info("创建预警对象: dangerBehaviorId={}, confidence={}",
-                            alert.getDangerBehaviorId(), alert.getConfidence());
+                    // 增加连续检测计数
+                    int count = videoConsecutiveCount.getOrDefault(keyword, 0) + 1;
+                    videoConsecutiveCount.put(keyword, count);
 
-                        // 检查阈值和限流
-                        if (alert.getDangerBehaviorId() != null) {
-                            AlertThreshold threshold = alertThresholdRepository
-                                    .findByDangerBehaviorId(alert.getDangerBehaviorId())
-                                    .orElse(null);
+                    // 保存待确认的预警信息
+                    videoPendingAlerts.computeIfAbsent(keyword, k -> new ArrayList<>())
+                            .add(new PendingAlert(frame, result, aiAlert));
 
-                            logger.info("查找阈值配置: dangerBehaviorId={}, threshold={}",
-                                alert.getDangerBehaviorId(), threshold);
+                    logger.info("检测到关键词: {}, 连续次数: {}/{}", keyword, count, consecutiveFramesRequired);
 
-                            if (threshold != null && threshold.getIsActive()) {
-                                logger.info("阈值检查: confidence={}, threshold={}",
-                                    alert.getConfidence().doubleValue(),
-                                    threshold.getConfidenceThreshold().doubleValue());
+                    // 检查是否达到连续帧阈值
+                    if (count >= consecutiveFramesRequired) {
+                        logger.info("连续 {} 帧检测到相同异常: {}", consecutiveFramesRequired, keyword);
 
-                                if (alert.getConfidence().doubleValue() >= threshold.getConfidenceThreshold().doubleValue()) {
-                                    if (canCreateAlert(alert.getDangerBehaviorId(), threshold)) {
-                                        // 保存预警
-                                        alert = alertRepository.save(alert);
-
-                                        logger.info("生成预警: {} - {} (置信度: {})",
-                                                aiAlert.getKeyword(),
-                                                aiAlert.getSeverity(),
-                                                aiAlert.getCombinedScore());
-
-                                        // 推送WebSocket预警
-                                        alertPushService.pushAlert(alert, video.getUserId());
-
-                                        // 更新统计
-                                        updateStatistics(alert);
-                                    } else {
-                                        logger.warn("预警被限流: dangerBehaviorId={}", alert.getDangerBehaviorId());
-                                    }
-                                } else {
-                                    logger.warn("预警置信度不足: confidence={} < threshold={}",
-                                        alert.getConfidence().doubleValue(),
-                                        threshold.getConfidenceThreshold().doubleValue());
-                                }
-                            } else {
-                                logger.warn("阈值配置无效或未激活: threshold={}", threshold);
-                            }
-                        } else {
-                            // 没有匹配到危险行为，仍然保存预警但不推送
-                            alert = alertRepository.save(alert);
-                            logger.info("生成未分类预警: {}", aiAlert.getKeyword());
+                        // 使用最新的检测结果创建预警
+                        boolean alertCreated = createAndPushAlert(video, frame, result, aiAlert);
+                        if (alertCreated) {
+                            hasAlert = true;
                         }
 
-                    } catch (Exception e) {
-                        logger.error("创建预警失败", e);
+                        // 重置该关键词的计数，避免重复报警
+                        videoConsecutiveCount.put(keyword, 0);
+                        videoPendingAlerts.get(keyword).clear();
                     }
                 }
-            } else {
-                logger.debug("该检测对象没有预警");
             }
         }
+
+        // 清理未在本帧检测到的关键词的连续计数（连续性中断）
+        List<String> keysToReset = new ArrayList<>();
+        for (String keyword : videoConsecutiveCount.keySet()) {
+            if (!detectedKeywords.contains(keyword)) {
+                keysToReset.add(keyword);
+            }
+        }
+        for (String keyword : keysToReset) {
+            if (videoConsecutiveCount.get(keyword) > 0) {
+                logger.debug("关键词 {} 连续性中断，重置计数", keyword);
+                videoConsecutiveCount.put(keyword, 0);
+                if (videoPendingAlerts.containsKey(keyword)) {
+                    videoPendingAlerts.get(keyword).clear();
+                }
+            }
+        }
+
+        return hasAlert;
+    }
+
+    /**
+     * 创建并推送预警
+     */
+    private boolean createAndPushAlert(Video video, ExtractedFrame frame, AIDetectionResult result, AIAlert aiAlert) {
+        try {
+            // 创建预警记录
+            Alert alert = createAlertFromAI(video, frame, result, aiAlert);
+            logger.info("创建预警对象: dangerBehaviorId={}, confidence={}",
+                alert.getDangerBehaviorId(), alert.getConfidence());
+
+            // 检查阈值和限流
+            if (alert.getDangerBehaviorId() != null) {
+                AlertThreshold threshold = alertThresholdRepository
+                        .findByDangerBehaviorId(alert.getDangerBehaviorId())
+                        .orElse(null);
+
+                logger.info("查找阈值配置: dangerBehaviorId={}, threshold={}",
+                    alert.getDangerBehaviorId(), threshold);
+
+                if (threshold != null && threshold.getIsActive()) {
+                    logger.info("阈值检查: confidence={}, threshold={}",
+                        alert.getConfidence().doubleValue(),
+                        threshold.getConfidenceThreshold().doubleValue());
+
+                    if (alert.getConfidence().doubleValue() >= threshold.getConfidenceThreshold().doubleValue()) {
+                        if (canCreateAlert(alert.getDangerBehaviorId(), threshold)) {
+                            // 保存预警
+                            alert = alertRepository.save(alert);
+
+                            logger.info("生成预警: {} - {} (置信度: {})",
+                                    aiAlert.getKeyword(),
+                                    aiAlert.getSeverity(),
+                                    aiAlert.getCombinedScore());
+
+                            // 推送WebSocket预警
+                            alertPushService.pushAlert(alert, video.getUserId());
+
+                            // 更新统计
+                            updateStatistics(alert);
+                            return true;
+                        } else {
+                            logger.warn("预警被限流: dangerBehaviorId={}", alert.getDangerBehaviorId());
+                        }
+                    } else {
+                        logger.warn("预警置信度不足: confidence={} < threshold={}",
+                            alert.getConfidence().doubleValue(),
+                            threshold.getConfidenceThreshold().doubleValue());
+                    }
+                } else {
+                    logger.warn("阈值配置无效或未激活: threshold={}", threshold);
+                }
+            } else {
+                // 没有匹配到危险行为，仍然保存预警但不推送
+                alert = alertRepository.save(alert);
+                logger.info("生成未分类预警: {}", aiAlert.getKeyword());
+            }
+
+        } catch (Exception e) {
+            logger.error("创建预警失败", e);
+        }
+        return false;
     }
 
     /**
@@ -320,19 +433,6 @@ public class FrameAnalysisService {
         desc.append(String.format("\n置信度: %.2f%%", aiAlert.getCombinedScore() * 100));
 
         return desc.toString();
-    }
-
-    /**
-     * 检查是否应该进行分析（时间间隔控制）
-     */
-    private boolean shouldAnalyze(Long videoId) {
-        Long lastTime = lastAnalysisTime.get(videoId);
-        if (lastTime == null) {
-            return true;
-        }
-
-        long elapsed = (System.currentTimeMillis() - lastTime) / 1000;
-        return elapsed >= minIntervalSeconds;
     }
 
     private boolean canCreateAlert(Long behaviorId, AlertThreshold threshold) {

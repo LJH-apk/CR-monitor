@@ -7,6 +7,16 @@
       preload="auto"
     ></video>
 
+    <!-- 持久状态指示器 -->
+    <div v-if="showStatusIndicator" class="status-indicator" :class="statusIndicatorClass">
+      <el-icon :size="20">
+        <CircleCheck v-if="detectionSummary?.status === 'normal'" />
+        <Warning v-else-if="detectionSummary?.status === 'alert'" />
+        <Loading v-else class="rotating" />
+      </el-icon>
+      <span class="status-text">{{ statusText }}</span>
+    </div>
+
     <!-- 预警覆盖层 -->
     <div v-if="showAlertOverlay" class="alert-overlay">
       <div class="alert-card">
@@ -44,6 +54,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -51,9 +62,10 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
-import { Warning } from '@element-plus/icons-vue'
+import { Warning, CircleCheck, Loading } from '@element-plus/icons-vue'
 import type { Alert } from '@/types/alert'
 import { useAuthStore } from '@/store/modules/auth'
+import type { DetectionSummary } from '@/api/video'
 
 interface ParsedAlert {
   behavior: string
@@ -62,9 +74,25 @@ interface ParsedAlert {
   category?: string
 }
 
+export interface DetectionStatusMessage {
+  type: 'alert' | 'normal'
+  videoId: number
+  analyzedFrames?: number
+  message?: string
+  alertData?: Alert
+}
+
 const props = defineProps<{
   src?: string
+  videoId?: number
   alert?: Alert | null
+  detectionStatus?: DetectionStatusMessage | null
+  detectionSummary?: DetectionSummary | null
+}>()
+
+const emit = defineEmits<{
+  (e: 'playbackProgress', currentTime: number): void
+  (e: 'stopPlayback'): void
 }>()
 
 const videoRef = ref<HTMLVideoElement>()
@@ -72,6 +100,31 @@ let player: any = null
 const showAlertOverlay = ref(false)
 const currentAlert = ref<Alert | null>(null)
 const authStore = useAuthStore()
+const isPlaying = ref(false)
+let progressInterval: number | null = null
+
+// 状态指示器
+const showStatusIndicator = computed(() => {
+  return isPlaying.value || props.detectionSummary != null
+})
+
+const statusIndicatorClass = computed(() => {
+  if (isPlaying.value) return 'status-analyzing'
+  if (!props.detectionSummary) return ''
+  return `status-${props.detectionSummary.status}`
+})
+
+const statusText = computed(() => {
+  if (isPlaying.value) return '实时检测中'
+  if (!props.detectionSummary) return ''
+  if (props.detectionSummary.status === 'normal') {
+    return '画面正常'
+  } else if (props.detectionSummary.status === 'alert') {
+    return `${props.detectionSummary.totalAlerts} 个异常`
+  } else {
+    return `分析中 ${props.detectionSummary.progress}%`
+  }
+})
 
 const parsedAlert = computed(() => {
   if (!currentAlert.value) {
@@ -130,14 +183,56 @@ onMounted(() => {
         type: 'application/x-mpegURL'
       }] : []
     })
+
+    // 监听播放事件
+    player.on('play', () => {
+      isPlaying.value = true
+      startProgressReporting()
+    })
+
+    // 监听暂停事件
+    player.on('pause', () => {
+      isPlaying.value = false
+      stopProgressReporting()
+    })
+
+    // 监听结束事件
+    player.on('ended', () => {
+      isPlaying.value = false
+      stopProgressReporting()
+      emit('stopPlayback')
+    })
   }
 })
 
 onUnmounted(() => {
+  stopProgressReporting()
+  emit('stopPlayback')
   if (player) {
     player.dispose()
   }
 })
+
+// 开始定时发送播放进度
+function startProgressReporting() {
+  if (progressInterval) return
+
+  // 每秒发送一次播放进度
+  progressInterval = window.setInterval(() => {
+    if (player && !player.paused()) {
+      const currentTime = player.currentTime()
+      emit('playbackProgress', currentTime)
+    }
+  }, 1000)
+}
+
+// 停止发送播放进度
+function stopProgressReporting() {
+  if (progressInterval) {
+    clearInterval(progressInterval)
+    progressInterval = null
+  }
+}
 
 // 监听src变化
 watch(() => props.src, (newSrc) => {
@@ -154,6 +249,7 @@ watch(() => props.alert, (newAlert) => {
   if (newAlert && player) {
     currentAlert.value = newAlert
     showAlertOverlay.value = true
+    showNormalOverlay.value = false
 
     // 暂停视频
     player.pause()
@@ -165,6 +261,25 @@ watch(() => props.alert, (newAlert) => {
     }, 3000)
   }
 })
+
+// 监听检测状态消息
+watch(() => props.detectionStatus, (newStatus) => {
+  if (newStatus) {
+    if (newStatus.type === 'alert' && newStatus.alertData) {
+      // 预警消息
+      currentAlert.value = newStatus.alertData
+      showAlertOverlay.value = true
+
+      if (player) {
+        player.pause()
+        setTimeout(() => {
+          showAlertOverlay.value = false
+          player.play()
+        }, 3000)
+      }
+    }
+  }
+})
 </script>
 
 <style scoped>
@@ -174,6 +289,54 @@ watch(() => props.alert, (newAlert) => {
   background: #000;
   border-radius: 8px;
   overflow: hidden;
+}
+
+/* 持久状态指示器 */
+.status-indicator {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.status-indicator.status-normal {
+  background: rgba(103, 194, 58, 0.9);
+  color: white;
+  box-shadow: 0 2px 12px rgba(103, 194, 58, 0.4);
+}
+
+.status-indicator.status-alert {
+  background: rgba(245, 108, 108, 0.9);
+  color: white;
+  box-shadow: 0 2px 12px rgba(245, 108, 108, 0.4);
+}
+
+.status-indicator.status-analyzing {
+  background: rgba(64, 158, 255, 0.9);
+  color: white;
+  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.4);
+}
+
+.status-text {
+  white-space: nowrap;
+}
+
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .alert-overlay {
@@ -272,4 +435,5 @@ watch(() => props.alert, (newAlert) => {
   font-weight: 700;
   color: #409EFF;
 }
+
 </style>

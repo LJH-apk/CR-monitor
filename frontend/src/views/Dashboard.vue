@@ -63,7 +63,7 @@
     <el-main class="dashboard-main">
       <!-- 统计卡片 -->
       <el-row :gutter="20" class="stats-row">
-        <el-col :span="5">
+        <el-col :span="6">
           <el-card class="stat-card">
             <el-statistic title="总预警数" :value="stats?.totalAlerts || 0">
               <template #prefix>
@@ -72,7 +72,7 @@
             </el-statistic>
           </el-card>
         </el-col>
-        <el-col :span="5">
+        <el-col :span="6">
           <el-card class="stat-card">
             <el-statistic title="未确认预警" :value="stats?.unacknowledgedAlerts || 0">
               <template #prefix>
@@ -81,7 +81,7 @@
             </el-statistic>
           </el-card>
         </el-col>
-        <el-col :span="5">
+        <el-col :span="6">
           <el-card class="stat-card">
             <el-statistic title="视频总数" :value="stats?.totalVideos || 0">
               <template #prefix>
@@ -90,7 +90,7 @@
             </el-statistic>
           </el-card>
         </el-col>
-        <el-col :span="4">
+        <el-col :span="6">
           <el-card class="stat-card">
             <el-statistic title="连接状态" :value="wsConnected ? '已连接' : '未连接'">
               <template #prefix>
@@ -99,31 +99,6 @@
                 </el-icon>
               </template>
             </el-statistic>
-          </el-card>
-        </el-col>
-        <el-col :span="5">
-          <el-card class="stat-card analysis-progress-card">
-            <div class="analysis-progress-content">
-              <div class="progress-header">
-                <span class="progress-title">AI分析进度</span>
-                <el-icon v-if="analysisProgress.analyzing" class="analyzing-icon" color="#409EFF">
-                  <Loading />
-                </el-icon>
-              </div>
-              <div v-if="selectedVideoId" class="progress-body">
-                <el-progress
-                  :percentage="analysisProgress.progress"
-                  :status="analysisProgress.progress === 100 ? 'success' : undefined"
-                  :stroke-width="12"
-                />
-                <div class="progress-text">
-                  {{ analysisProgress.analyzing ? '分析中...' : analysisProgress.progress === 100 ? '分析完成' : '等待分析' }}
-                </div>
-              </div>
-              <div v-else class="progress-body">
-                <el-empty description="未选择视频" :image-size="40" />
-              </div>
-            </div>
           </el-card>
         </el-col>
       </el-row>
@@ -163,32 +138,32 @@
             </template>
 
             <VideoPlayer
-              v-if="currentVideoSrc && analysisProgress.progress === 100"
+              v-if="currentVideoSrc"
               :src="currentVideoSrc"
+              :video-id="selectedVideoId"
               :alert="latestAlert"
+              :detection-status="currentDetectionStatus"
+              :detection-summary="detectionSummary"
+              @playback-progress="handlePlaybackProgress"
+              @stop-playback="handleStopPlayback"
             />
-            <div v-else-if="currentVideoSrc && analysisProgress.analyzing" class="analyzing-placeholder">
-              <el-icon :size="48" color="#409EFF" class="analyzing-icon-large">
-                <Loading />
-              </el-icon>
-              <p class="analyzing-text">AI正在分析视频中，请稍候...</p>
-              <el-progress
-                :percentage="analysisProgress.progress"
-                :stroke-width="8"
-                style="width: 60%; margin-top: 16px;"
-              />
-            </div>
             <el-empty v-else description="请选择视频" />
           </el-card>
         </el-col>
 
         <el-col :span="8">
-          <AlertPanel :alerts="filteredRealtimeAlerts" />
+          <AlertPanel :alerts="filteredRealtimeAlerts" :detection-status="currentDetectionStatus" />
         </el-col>
       </el-row>
 
       <!-- 图表区域 -->
       <AlertChart :stats="stats" />
+
+      <!-- 底部备案信息 -->
+      <div class="footer-info">
+        <span>© 2026 智能监控系统 版权所有</span>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">京ICP备XXXXXXXX号-1</a>
+      </div>
     </el-main>
   </div>
 </template>
@@ -205,15 +180,14 @@ import {
   Warning,
   Bell,
   VideoPlay,
-  Connection,
-  Loading
+  Connection
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/store/modules/auth'
 import { useVideoStore } from '@/store/modules/video'
 import { useAlertStore } from '@/store/modules/alert'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { dashboardApi } from '@/api/alert'
-import { videoApi } from '@/api/video'
+import { videoApi, type DetectionSummary } from '@/api/video'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import AlertPanel from '@/components/AlertPanel.vue'
 import AlertChart from '@/components/AlertChart.vue'
@@ -223,17 +197,23 @@ const router = useRouter()
 const authStore = useAuthStore()
 const videoStore = useVideoStore()
 const alertStore = useAlertStore()
-const { connected: wsConnected, connect: wsConnect, disconnect: wsDisconnect } = useWebSocket()
+const { connected: wsConnected, latestStatus, connect: wsConnect, disconnect: wsDisconnect, sendPlaybackProgress, sendStopPlayback } = useWebSocket()
 
 const selectedVideoId = ref<number>()
 const stats = ref<DashboardStats | null>(null)
 const isWsConnected = ref(false)
-const analysisProgress = ref({
-  progress: 0,
-  status: 'pending',
-  analyzing: false
+const detectionSummary = ref<DetectionSummary | null>(null)
+let summaryInterval: number | null = null
+
+// 当前视频的检测状态（用于传递给 VideoPlayer）
+const currentDetectionStatus = computed(() => {
+  if (!selectedVideoId.value || !latestStatus.value) return null
+  // 使用 == 宽松比较，避免类型不匹配问题（后端 Long vs 前端 number）
+  if (latestStatus.value.videoId == selectedVideoId.value) {
+    return latestStatus.value
+  }
+  return null
 })
-let progressInterval: number | null = null
 
 const currentVideoSrc = computed(() => {
   if (!selectedVideoId.value) return null
@@ -269,8 +249,8 @@ onMounted(async () => {
 
   onUnmounted(() => {
     clearInterval(interval)
-    if (progressInterval) {
-      clearInterval(progressInterval)
+    if (summaryInterval) {
+      clearInterval(summaryInterval)
     }
     if (isWsConnected.value) {
       wsDisconnect()
@@ -295,8 +275,8 @@ const handleVideoChange = (videoId: number) => {
     // 加载该视频的历史预警
     alertStore.fetchByVideo(videoId)
 
-    // 开始轮询分析进度
-    startProgressPolling(videoId)
+    // 开始轮询检测摘要
+    startSummaryPolling(videoId)
 
     // 视频就绪后连接WebSocket
     if (video.status === 'READY') {
@@ -305,35 +285,27 @@ const handleVideoChange = (videoId: number) => {
   }
 }
 
-const startProgressPolling = async (videoId: number) => {
+const startSummaryPolling = async (videoId: number) => {
   // 清除之前的轮询
-  if (progressInterval) {
-    clearInterval(progressInterval)
+  if (summaryInterval) {
+    clearInterval(summaryInterval)
   }
 
-  // 立即获取一次进度
-  await loadAnalysisProgress(videoId)
+  // 立即获取一次
+  await loadDetectionSummary(videoId)
 
-  // 每2秒轮询一次
-  progressInterval = setInterval(async () => {
-    await loadAnalysisProgress(videoId)
-
-    // 如果分析完成，停止轮询
-    if (analysisProgress.value.progress === 100 && !analysisProgress.value.analyzing) {
-      if (progressInterval) {
-        clearInterval(progressInterval)
-        progressInterval = null
-      }
-    }
-  }, 2000)
+  // 每3秒轮询一次
+  summaryInterval = setInterval(async () => {
+    await loadDetectionSummary(videoId)
+  }, 3000)
 }
 
-const loadAnalysisProgress = async (videoId: number) => {
+const loadDetectionSummary = async (videoId: number) => {
   try {
-    const response = await videoApi.getAnalysisProgress(videoId)
-    analysisProgress.value = response.data
+    const response = await videoApi.getDetectionSummary(videoId)
+    detectionSummary.value = response.data
   } catch (error) {
-    console.error('Failed to load analysis progress:', error)
+    console.error('Failed to load detection summary:', error)
   }
 }
 
@@ -349,6 +321,20 @@ const connectWebSocketForVideo = (videoId: number) => {
     wsConnect(token)
     isWsConnected.value = true
     console.log('WebSocket connected for video:', videoId)
+  }
+}
+
+// 处理播放进度事件，发送给后端进行实时分析
+const handlePlaybackProgress = (currentTime: number) => {
+  if (selectedVideoId.value && isWsConnected.value) {
+    sendPlaybackProgress(selectedVideoId.value, currentTime)
+  }
+}
+
+// 处理停止播放事件
+const handleStopPlayback = () => {
+  if (selectedVideoId.value && isWsConnected.value) {
+    sendStopPlayback(selectedVideoId.value)
   }
 }
 
@@ -430,70 +416,26 @@ const handleUserCommand = async (command: string) => {
   align-items: center;
 }
 
-.analysis-progress-card {
-  height: 100%;
-}
-
-.analysis-progress-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.progress-title {
-  font-size: 14px;
-  color: #909399;
-  font-weight: 500;
-}
-
-.analyzing-icon {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.progress-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.progress-text {
+.footer-info {
+  margin-top: 40px;
+  padding: 20px 0;
   text-align: center;
+  color: #909399;
   font-size: 12px;
-  color: #606266;
+  border-top: 1px solid #EBEEF5;
 }
 
-.analyzing-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  padding: 40px;
+.footer-info span {
+  margin-right: 16px;
 }
 
-.analyzing-icon-large {
-  animation: rotate 1s linear infinite;
-  margin-bottom: 16px;
+.footer-info a {
+  color: #909399;
+  text-decoration: none;
+  transition: color 0.3s;
 }
 
-.analyzing-text {
-  font-size: 16px;
-  color: #606266;
-  margin: 0;
+.footer-info a:hover {
+  color: #409EFF;
 }
 </style>

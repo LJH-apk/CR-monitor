@@ -1,0 +1,5 @@
+/storage/
+/backend/storage/
+
+.env
+backend/.env

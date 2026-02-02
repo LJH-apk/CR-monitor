@@ -2,13 +2,24 @@
   <el-card class="alert-panel">
     <template #header>
       <div class="panel-header">
-        <span>实时预警</span>
+        <span>实时信息</span>
         <el-badge :value="unacknowledgedCount" :max="99" type="danger" />
       </div>
     </template>
 
     <div class="alert-list">
-      <el-empty v-if="alerts.length === 0" description="暂无预警" />
+      <!-- 无异常状态提示 -->
+      <div v-if="showNormalStatus" class="normal-status-card">
+        <div class="normal-status-icon">
+          <el-icon :size="24" color="#67C23A"><CircleCheck /></el-icon>
+        </div>
+        <div class="normal-status-content">
+          <div class="normal-status-title">检测周期完成，无异常</div>
+          <div class="normal-status-detail">已分析 {{ normalFrameCount }} 帧</div>
+        </div>
+      </div>
+
+      <el-empty v-if="alerts.length === 0 && !showNormalStatus" description="当前情况正常" />
 
       <div
         v-for="alert in alerts"
@@ -72,8 +83,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { CircleCheck } from '@element-plus/icons-vue'
 import type { Alert } from '@/types/alert'
 import { useAlertStore } from '@/store/modules/alert'
 
@@ -85,11 +97,37 @@ interface ParsedAlert {
   severity?: string
 }
 
+export interface DetectionStatusMessage {
+  type: 'alert' | 'normal'
+  videoId: number
+  analyzedFrames?: number
+  message?: string
+  alertData?: Alert
+}
+
 const props = defineProps<{
   alerts: Alert[]
+  detectionStatus?: DetectionStatusMessage | null
 }>()
 
 const alertStore = useAlertStore()
+
+// 显示无异常状态
+const showNormalStatus = ref(false)
+const normalFrameCount = ref(0)
+
+// 监听检测状态
+watch(() => props.detectionStatus, (newStatus) => {
+  if (newStatus && newStatus.type === 'normal') {
+    normalFrameCount.value = newStatus.analyzedFrames || 0
+    showNormalStatus.value = true
+
+    // 5秒后隐藏
+    setTimeout(() => {
+      showNormalStatus.value = false
+    }, 5000)
+  }
+}, { immediate: true })
 
 const unacknowledgedCount = computed(() => {
   return props.alerts.filter(a => !a.isAcknowledged).length
@@ -244,5 +282,49 @@ const handleAcknowledge = async (id: number) => {
 .alert-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+/* 无异常状态卡片样式 */
+.normal-status-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #f0f9eb 0%, #e1f3d8 100%);
+  border: 1px solid #67C23A;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.normal-status-icon {
+  flex-shrink: 0;
+}
+
+.normal-status-content {
+  flex: 1;
+}
+
+.normal-status-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #67C23A;
+  margin-bottom: 4px;
+}
+
+.normal-status-detail {
+  font-size: 12px;
+  color: #909399;
 }
 </style>
