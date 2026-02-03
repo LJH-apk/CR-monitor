@@ -7,6 +7,14 @@
         <h1>智能安全监控系统</h1>
       </div>
       <div class="header-right">
+        <!-- 多路监控按钮 -->
+        <el-button
+          type="primary"
+          @click="router.push('/multi-monitor')"
+        >
+          多路监控
+        </el-button>
+
         <!-- 样本上传按钮（所有用户可见） -->
         <el-button
           type="success"
@@ -219,7 +227,7 @@ const currentVideoSrc = computed(() => {
   if (!selectedVideoId.value) return null
   const video = videoStore.videos.find(v => v.id === selectedVideoId.value)
   if (!video || !video.hlsPath) return null
-  return `http://localhost:8080/api/files/videos/${video.id}/playlist.m3u8`
+  return `/api/files/videos/${video.id}/playlist.m3u8`
 })
 
 // 过滤当前视频的实时预警

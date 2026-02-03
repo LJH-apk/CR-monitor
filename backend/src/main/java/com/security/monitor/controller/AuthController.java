@@ -4,6 +4,7 @@ import com.security.monitor.dto.LoginRequest;
 import com.security.monitor.dto.LoginResponse;
 import com.security.monitor.service.AuthService;
 import com.security.monitor.service.SystemLogService;
+import com.security.monitor.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,9 @@ public class AuthController {
 
     @Autowired
     private SystemLogService systemLogService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request,
@@ -73,7 +77,28 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(HttpServletRequest httpRequest) {
+        String ipAddress = getClientIpAddress(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        // 从 Authorization header 获取用户信息
+        String authHeader = httpRequest.getHeader("Authorization");
+        Long userId = null;
+        String username = "未知用户";
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            try {
+                userId = jwtUtil.extractUserId(token);
+                username = jwtUtil.extractUsername(token);
+            } catch (Exception e) {
+                logger.warn("Failed to extract user info from token: {}", e.getMessage());
+            }
+        }
+
+        systemLogService.logLogout(userId, username, ipAddress, userAgent, "用户登出");
+        logger.info("User logged out: {}", username);
+
         return ResponseEntity.ok().build();
     }
 }

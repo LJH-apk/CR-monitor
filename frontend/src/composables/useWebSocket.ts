@@ -16,6 +16,7 @@ export function useWebSocket() {
   const latestStatus = ref<DetectionStatusMessage | null>(null)
   const alertStore = useAlertStore()
   let currentToken = ''
+  const messageListeners = ref<((msg: DetectionStatusMessage) => void)[]>([])
 
   function connect(token: string) {
     if (ws.value) {
@@ -48,16 +49,23 @@ export function useWebSocket() {
             // 无异常状态消息
             console.log('Received normal status:', statusMessage.message, 'frames:', statusMessage.analyzedFrames)
           }
+
+          // 通知所有监听器
+          messageListeners.value.forEach(listener => listener(statusMessage))
         } else {
           // 兼容旧格式（直接是 Alert 对象）
           const alert: Alert = message
           alertStore.addRealtimeAlert(alert)
-          latestStatus.value = {
+          const statusMessage: DetectionStatusMessage = {
             type: 'alert',
             videoId: alert.videoId,
             alertData: alert
           }
+          latestStatus.value = statusMessage
           console.log('Received alert (legacy format):', alert)
+
+          // 通知所有监听器
+          messageListeners.value.forEach(listener => listener(statusMessage))
         }
       } catch (error) {
         console.error('Failed to parse message:', error)
@@ -123,12 +131,25 @@ export function useWebSocket() {
     disconnect()
   })
 
+  function addMessageListener(listener: (msg: DetectionStatusMessage) => void) {
+    messageListeners.value.push(listener)
+  }
+
+  function removeMessageListener(listener: (msg: DetectionStatusMessage) => void) {
+    const index = messageListeners.value.indexOf(listener)
+    if (index > -1) {
+      messageListeners.value.splice(index, 1)
+    }
+  }
+
   return {
     connected,
     latestStatus,
     connect,
     disconnect,
     sendPlaybackProgress,
-    sendStopPlayback
+    sendStopPlayback,
+    addMessageListener,
+    removeMessageListener
   }
 }

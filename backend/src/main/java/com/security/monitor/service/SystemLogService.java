@@ -58,6 +58,13 @@ public class SystemLogService {
         saveLogAsync(log);
     }
 
+    @Async
+    public void logLogout(Long userId, String username, String ipAddress, String userAgent, String message) {
+        SystemLog log = SystemLog.logoutLog(userId, username, ipAddress, userAgent, message);
+        log.setLocation(resolveLocation(ipAddress));
+        saveLogAsync(log);
+    }
+
     public Page<SystemLogDTO> getLogs(String level, String type, Long userId,
                                        LocalDateTime startTime, LocalDateTime endTime,
                                        String keyword, Pageable pageable) {
@@ -91,6 +98,10 @@ public class SystemLogService {
                 stats.setLoginFailCount(count);
             }
         }
+
+        // 统计登出次数
+        Long logoutCount = systemLogRepository.countLogoutSince(since);
+        stats.setLogoutCount(logoutCount != null ? logoutCount : 0L);
 
         stats.setTotalCount(levelCounts.values().stream().mapToLong(Long::longValue).sum());
 

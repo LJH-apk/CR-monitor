@@ -96,4 +96,17 @@ public class SystemLog {
         log.setRequestUri(requestUri);
         return log;
     }
+
+    public static SystemLog logoutLog(Long userId, String username, String ipAddress,
+                                       String userAgent, String message) {
+        SystemLog log = new SystemLog();
+        log.setLevel("INFO");
+        log.setType("LOGOUT");
+        log.setUserId(userId);
+        log.setUsername(username);
+        log.setIpAddress(ipAddress);
+        log.setUserAgent(userAgent);
+        log.setMessage(message);
+        return log;
+    }
 }

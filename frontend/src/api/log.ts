@@ -9,6 +9,7 @@ export interface SystemLog {
   userId?: number
   username?: string
   ipAddress?: string
+  userAgent?: string
   location?: string
   loginSuccess?: boolean
   requestUri?: string
@@ -20,6 +21,7 @@ export interface LogStats {
   levelCounts: Record<string, number>
   loginSuccessCount: number
   loginFailCount: number
+  logoutCount: number
   totalCount: number
 }
 

@@ -17,12 +17,12 @@
 
     <!-- 统计卡片 -->
     <el-row :gutter="20" style="margin-bottom: 20px">
-      <el-col :span="6">
+      <el-col :span="4">
         <el-card shadow="hover">
           <el-statistic title="总日志数" :value="stats.totalCount" />
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :span="4">
         <el-card shadow="hover">
           <el-statistic title="错误日志" :value="stats.levelCounts?.ERROR || 0">
             <template #suffix>
@@ -31,7 +31,16 @@
           </el-statistic>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :span="4">
+        <el-card shadow="hover">
+          <el-statistic title="警告日志" :value="stats.levelCounts?.WARN || 0">
+            <template #suffix>
+              <el-tag type="warning" size="small">WARN</el-tag>
+            </template>
+          </el-statistic>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
         <el-card shadow="hover">
           <el-statistic title="登录成功" :value="stats.loginSuccessCount || 0">
             <template #suffix>
@@ -40,11 +49,20 @@
           </el-statistic>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :span="4">
         <el-card shadow="hover">
           <el-statistic title="登录失败" :value="stats.loginFailCount || 0">
             <template #suffix>
               <el-tag type="warning" size="small">次</el-tag>
+            </template>
+          </el-statistic>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card shadow="hover">
+          <el-statistic title="用户登出" :value="stats.logoutCount || 0">
+            <template #suffix>
+              <el-tag type="info" size="small">次</el-tag>
             </template>
           </el-statistic>
         </el-card>
@@ -102,13 +120,23 @@
       >
         <el-table-column type="expand">
           <template #default="{ row }">
-            <div class="log-details" v-if="row.details">
-              <el-text type="info">详细信息:</el-text>
-              <pre>{{ row.details }}</pre>
-            </div>
-            <div class="log-details" v-if="row.requestUri">
-              <el-text type="info">请求路径:</el-text>
-              <span>{{ row.requestMethod }} {{ row.requestUri }}</span>
+            <div class="log-expand-content">
+              <div class="log-details" v-if="row.details">
+                <el-text type="info" tag="strong">详细信息:</el-text>
+                <pre>{{ row.details }}</pre>
+              </div>
+              <div class="log-details" v-if="row.requestUri">
+                <el-text type="info" tag="strong">请求路径:</el-text>
+                <span>{{ row.requestMethod }} {{ row.requestUri }}</span>
+              </div>
+              <div class="log-details" v-if="row.userAgent">
+                <el-text type="info" tag="strong">浏览器信息:</el-text>
+                <span>{{ row.userAgent }}</span>
+              </div>
+              <div class="log-details" v-if="row.userId">
+                <el-text type="info" tag="strong">用户ID:</el-text>
+                <span>{{ row.userId }}</span>
+              </div>
             </div>
           </template>
         </el-table-column>
@@ -319,15 +347,27 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.log-details {
+.log-expand-content {
   padding: 10px 20px;
+}
+
+.log-details {
+  padding: 10px 15px;
   background-color: #f5f7fa;
   border-radius: 4px;
   margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-details span {
+  color: #606266;
+  word-break: break-all;
 }
 
 .log-details pre {
-  margin: 10px 0 0 0;
+  margin: 0;
   padding: 10px;
   background-color: #fff;
   border: 1px solid #ebeef5;

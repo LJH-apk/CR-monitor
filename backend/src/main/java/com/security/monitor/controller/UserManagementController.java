@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -26,6 +28,7 @@ public class UserManagementController {
 
     /**
      * 获取用户列表（分页）
+     * 开发者可以看到所有用户，管理员和超级管理员看不到开发者账号
      */
     @GetMapping
     public ResponseEntity<Page<UserDTO>> getAllUsers(
@@ -39,8 +42,22 @@ public class UserManagementController {
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<UserDTO> users = userManagementService.getAllUsers(pageable);
+        // 检查当前用户是否是开发者
+        boolean isDeveloper = isDeveloperRole();
+        Page<UserDTO> users = userManagementService.getAllUsers(pageable, isDeveloper);
         return ResponseEntity.ok(users);
+    }
+
+    /**
+     * 检查当前用户是否是开发者角色
+     */
+    private boolean isDeveloperRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getAuthorities() != null) {
+            return auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_DEVELOPER"));
+        }
+        return false;
     }
 
     /**

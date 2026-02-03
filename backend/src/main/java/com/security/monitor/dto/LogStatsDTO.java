@@ -8,5 +8,6 @@ public class LogStatsDTO {
     private Map<String, Long> levelCounts;
     private Long loginSuccessCount;
     private Long loginFailCount;
+    private Long logoutCount;
     private Long totalCount;
 }

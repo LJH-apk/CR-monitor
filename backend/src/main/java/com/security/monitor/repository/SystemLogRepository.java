@@ -47,4 +47,8 @@ public interface SystemLogRepository extends JpaRepository<SystemLog, Long> {
     @Query("SELECT l.loginSuccess, COUNT(l) FROM SystemLog l " +
            "WHERE l.type = 'LOGIN' AND l.createdAt >= :since GROUP BY l.loginSuccess")
     List<Object[]> countLoginStatsSince(@Param("since") LocalDateTime since);
+
+    @Query("SELECT COUNT(l) FROM SystemLog l " +
+           "WHERE l.type = 'LOGOUT' AND l.createdAt >= :since")
+    Long countLogoutSince(@Param("since") LocalDateTime since);
 }

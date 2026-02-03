@@ -286,9 +286,20 @@ watch(() => props.detectionStatus, (newStatus) => {
 .video-player-container {
   position: relative;
   width: 100%;
+  height: 100%;
   background: #000;
   border-radius: 8px;
   overflow: hidden;
+}
+
+.video-player-container :deep(.video-js) {
+  width: 100%;
+  height: 100%;
+}
+
+.video-player-container :deep(.vjs-fluid) {
+  padding-top: 0 !important;
+  height: 100% !important;
 }
 
 /* 持久状态指示器 */

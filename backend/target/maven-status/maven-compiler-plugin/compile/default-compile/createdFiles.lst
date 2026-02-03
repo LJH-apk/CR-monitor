@@ -9,6 +9,7 @@ com/security/monitor/websocket/WebSocketSessionManager.class
 com/security/monitor/service/VideoProcessingService.class
 com/security/monitor/controller/FileController.class
 com/security/monitor/config/AsyncConfig.class
+com/security/monitor/dto/DetectionStatusMessage.class
 com/security/monitor/dto/LoginRequest.class
 com/security/monitor/controller/AlertController.class
 com/security/monitor/service/AIServiceClient.class
@@ -30,13 +31,16 @@ com/security/monitor/dto/VideoUploadResponse.class
 com/security/monitor/dto/CocoExportDTO.class
 com/security/monitor/service/CacheService.class
 com/security/monitor/dto/DashboardStatsDTO$HourlyAlertCount.class
+com/security/monitor/websocket/AlertWebSocketHandler$1.class
 com/security/monitor/service/FrameAnalysisService.class
 com/security/monitor/controller/DangerBehaviorController.class
 com/security/monitor/dto/CocoExportDTO$CocoCategory.class
 com/security/monitor/config/SecurityConfig.class
 com/security/monitor/config/CorsConfig.class
+com/security/monitor/service/RealtimeAnalysisService$AnalysisState.class
 com/security/monitor/dto/AIAlert.class
 com/security/monitor/controller/ThresholdController.class
+com/security/monitor/service/RealtimeAnalysisService.class
 com/security/monitor/controller/VideoController.class
 com/security/monitor/repository/SampleAnnotationRepository.class
 com/security/monitor/dto/DashboardStatsDTO.class
@@ -72,4 +76,5 @@ com/security/monitor/repository/DangerBehaviorRepository.class
 com/security/monitor/entity/TrainingSample.class
 com/security/monitor/config/RedisConfig.class
 com/security/monitor/util/FrameExtractor.class
+com/security/monitor/service/FrameAnalysisService$PendingAlert.class
 com/security/monitor/dto/CreateUserRequest.class

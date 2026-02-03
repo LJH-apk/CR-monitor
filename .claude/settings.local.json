@@ -46,7 +46,8 @@
       "Bash(sudo rm:*)",
       "Bash(sudo ln:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(javac:*)"
     ]
   }
 }

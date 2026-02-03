@@ -21,6 +21,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/multi-monitor',
+      name: 'MultiMonitor',
+      component: () => import('@/views/MultiMonitor.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/admin/behaviors',
       name: 'DangerBehaviors',
       component: () => import('@/views/Admin/DangerBehaviors.vue'),

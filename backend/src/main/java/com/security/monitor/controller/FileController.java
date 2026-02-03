@@ -54,6 +54,7 @@ public class FileController {
 
         String token = authHeader.substring(7);
         Long userId = jwtUtil.extractUserId(token);
+        String role = jwtUtil.extractRole(token);
 
         // 安全：验证用户是否有权访问该视频
         Video video = videoRepository.findById(videoId).orElse(null);
@@ -62,7 +63,9 @@ public class FileController {
             return ResponseEntity.notFound().build();
         }
 
-        if (!video.getUserId().equals(userId)) {
+        // 管理员、超级管理员、开发者可以访问所有视频，普通用户只能访问自己的视频
+        boolean isAdmin = "ADMIN".equals(role) || "SUPER_ADMIN".equals(role) || "DEVELOPER".equals(role);
+        if (!isAdmin && !video.getUserId().equals(userId)) {
             logger.warn("User {} attempted to access video {} without permission", userId, videoId);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -110,6 +113,7 @@ public class FileController {
 
         String token = authHeader.substring(7);
         Long userId = jwtUtil.extractUserId(token);
+        String role = jwtUtil.extractRole(token);
 
         // 安全：验证用户是否有权访问该视频
         Video video = videoRepository.findById(videoId).orElse(null);
@@ -117,7 +121,9 @@ public class FileController {
             return ResponseEntity.notFound().build();
         }
 
-        if (!video.getUserId().equals(userId)) {
+        // 管理员、超级管理员、开发者可以访问所有视频，普通用户只能访问自己的视频
+        boolean isAdmin = "ADMIN".equals(role) || "SUPER_ADMIN".equals(role) || "DEVELOPER".equals(role);
+        if (!isAdmin && !video.getUserId().equals(userId)) {
             logger.warn("User {} attempted to access thumbnail for video {} without permission", userId, videoId);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
