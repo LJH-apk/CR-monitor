@@ -64,11 +64,21 @@ public class DangerBehaviorController {
 
         return dangerBehaviorRepository.findById(id)
                 .map(existing -> {
-                    existing.setName(behavior.getName());
-                    existing.setDescription(behavior.getDescription());
-                    existing.setSeverityLevel(behavior.getSeverityLevel());
-                    existing.setColorCode(behavior.getColorCode());
-                    existing.setIsActive(behavior.getIsActive());
+                    if (behavior.getName() != null) {
+                        existing.setName(behavior.getName());
+                    }
+                    if (behavior.getDescription() != null) {
+                        existing.setDescription(behavior.getDescription());
+                    }
+                    if (behavior.getSeverityLevel() != null) {
+                        existing.setSeverityLevel(behavior.getSeverityLevel());
+                    }
+                    if (behavior.getColorCode() != null) {
+                        existing.setColorCode(behavior.getColorCode());
+                    }
+                    if (behavior.getIsActive() != null) {
+                        existing.setIsActive(behavior.getIsActive());
+                    }
                     DangerBehavior updated = dangerBehaviorRepository.save(existing);
                     invalidateCache();
                     Authentication auth = SecurityContextHolder.getContext().getAuthentication();

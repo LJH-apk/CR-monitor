@@ -65,10 +65,18 @@ public class ThresholdController {
 
         return thresholdRepository.findById(id)
                 .map(existing -> {
-                    existing.setConfidenceThreshold(threshold.getConfidenceThreshold());
-                    existing.setTimeWindowSeconds(threshold.getTimeWindowSeconds());
-                    existing.setMaxAlertsPerWindow(threshold.getMaxAlertsPerWindow());
-                    existing.setIsActive(threshold.getIsActive());
+                    if (threshold.getConfidenceThreshold() != null) {
+                        existing.setConfidenceThreshold(threshold.getConfidenceThreshold());
+                    }
+                    if (threshold.getTimeWindowSeconds() != null) {
+                        existing.setTimeWindowSeconds(threshold.getTimeWindowSeconds());
+                    }
+                    if (threshold.getMaxAlertsPerWindow() != null) {
+                        existing.setMaxAlertsPerWindow(threshold.getMaxAlertsPerWindow());
+                    }
+                    if (threshold.getIsActive() != null) {
+                        existing.setIsActive(threshold.getIsActive());
+                    }
                     AlertThreshold updated = thresholdRepository.save(existing);
                     invalidateCache(existing.getDangerBehaviorId());
                     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
