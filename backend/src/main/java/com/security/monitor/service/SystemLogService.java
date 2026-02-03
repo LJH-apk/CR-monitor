@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,12 +24,11 @@ public class SystemLogService {
     @Autowired
     private SystemLogRepository systemLogRepository;
 
-    @Async
     public void saveLogAsync(SystemLog log) {
         try {
             systemLogRepository.save(log);
         } catch (Exception e) {
-            logger.error("Failed to save system log: {}", e.getMessage());
+            logger.error("Failed to save system log: {}", e.getMessage(), e);
         }
     }
 
@@ -38,7 +36,6 @@ public class SystemLogService {
         return systemLogRepository.save(log);
     }
 
-    @Async
     public void logLogin(Long userId, String username, String ipAddress,
                          String userAgent, boolean success, String message) {
         SystemLog log = SystemLog.loginLog(userId, username, ipAddress, userAgent, success, message);
@@ -46,26 +43,22 @@ public class SystemLogService {
         saveLogAsync(log);
     }
 
-    @Async
     public void logError(String message, String details, String requestUri, String requestMethod) {
         SystemLog log = SystemLog.errorLog(message, details, requestUri, requestMethod);
         saveLogAsync(log);
     }
 
-    @Async
     public void logOperation(Long userId, String username, String message, String requestUri) {
         SystemLog log = SystemLog.operationLog(userId, username, message, requestUri);
         saveLogAsync(log);
     }
 
-    @Async
     public void logLogout(Long userId, String username, String ipAddress, String userAgent, String message) {
         SystemLog log = SystemLog.logoutLog(userId, username, ipAddress, userAgent, message);
         log.setLocation(resolveLocation(ipAddress));
         saveLogAsync(log);
     }
 
-    @Async
     public void logUpload(Long userId, String username, String message, String details,
                           String ipAddress, String userAgent) {
         SystemLog log = SystemLog.uploadLog(userId, username, message, details, ipAddress, userAgent);
@@ -73,7 +66,6 @@ public class SystemLogService {
         saveLogAsync(log);
     }
 
-    @Async
     public void logDelete(Long userId, String username, String message, String details,
                           String ipAddress, String userAgent) {
         SystemLog log = SystemLog.deleteLog(userId, username, message, details, ipAddress, userAgent);
@@ -81,7 +73,6 @@ public class SystemLogService {
         saveLogAsync(log);
     }
 
-    @Async
     public void logUserManagement(Long operatorId, String operatorName,
                                    String action, String targetUser, String details,
                                    String ipAddress, String userAgent) {
@@ -91,7 +82,6 @@ public class SystemLogService {
         saveLogAsync(log);
     }
 
-    @Async
     public void logConfig(Long userId, String username,
                           String action, String target, String details,
                           String ipAddress, String userAgent) {
