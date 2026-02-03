@@ -21,6 +21,27 @@ export const videoApi = {
     })
   },
 
+  uploadWithProgress(
+    file: File,
+    onProgress: (progress: number) => void,
+    abortController?: AbortController
+  ) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post<VideoUploadResponse>('/videos/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      signal: abortController?.signal,
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          onProgress(percent)
+        }
+      }
+    })
+  },
+
   getList() {
     return apiClient.get<Video[]>('/videos')
   },

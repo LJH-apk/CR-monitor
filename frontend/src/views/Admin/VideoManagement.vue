@@ -23,13 +23,14 @@
 
     <el-card class="upload-card">
       <el-upload
+        ref="uploadRef"
         drag
-        :action="uploadUrl"
-        :headers="uploadHeaders"
-        :on-success="handleUploadSuccess"
-        :on-error="handleUploadError"
+        multiple
+        :auto-upload="false"
+        :on-change="handleFileChange"
         :before-upload="beforeUpload"
         accept="video/*"
+        :show-file-list="false"
       >
         <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
         <div class="el-upload__text">
@@ -37,15 +38,29 @@
         </div>
         <template #tip>
           <div class="el-upload__tip">
-            支持MP4、AVI等格式，文件大小不超过500MB
+            支持MP4、AVI等格式，文件大小不超过500MB，可同时选择多个文件
           </div>
         </template>
       </el-upload>
     </el-card>
 
+    <!-- 上传队列 -->
+    <UploadQueue
+      :tasks="uploadQueue.tasks.value"
+      @cancel="uploadQueue.cancelTask"
+      @retry="uploadQueue.retryTask"
+      @remove="uploadQueue.removeTask"
+      @clear-completed="uploadQueue.clearCompleted"
+    />
+
     <el-card class="video-list-card">
       <template #header>
-        <span>视频列表</span>
+        <div class="card-header">
+          <span>视频列表</span>
+          <el-button type="primary" size="small" @click="videoStore.fetchVideos">
+            刷新
+          </el-button>
+        </div>
       </template>
 
       <el-table :data="videoStore.videos" style="width: 100%">
@@ -85,21 +100,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { UploadFile } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { useVideoStore } from '@/store/modules/video'
 import { useAuthStore } from '@/store/modules/auth'
+import { useUploadQueue } from '@/composables/useUploadQueue'
+import UploadQueue from '@/components/UploadQueue.vue'
 
 const router = useRouter()
 const videoStore = useVideoStore()
 const authStore = useAuthStore()
-
-const uploadUrl = computed(() => 'http://localhost:8080/api/videos/upload')
-const uploadHeaders = computed(() => ({
-  Authorization: `Bearer ${authStore.token}`
-}))
+const uploadQueue = useUploadQueue()
 
 onMounted(() => {
   videoStore.fetchVideos()
@@ -124,13 +138,10 @@ const beforeUpload = (file: File) => {
   return true
 }
 
-const handleUploadSuccess = () => {
-  ElMessage.success('视频上传成功，正在转码...')
-  videoStore.fetchVideos()
-}
-
-const handleUploadError = () => {
-  ElMessage.error('视频上传失败')
+const handleFileChange = (uploadFile: UploadFile) => {
+  if (uploadFile.raw && beforeUpload(uploadFile.raw)) {
+    uploadQueue.addFiles([uploadFile.raw])
+  }
 }
 
 const handleDelete = async (id: number) => {
@@ -205,5 +216,11 @@ const formatFileSize = (bytes: number) => {
 
 .video-list-card {
   margin-top: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

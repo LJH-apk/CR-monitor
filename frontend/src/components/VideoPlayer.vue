@@ -98,23 +98,38 @@ const emit = defineEmits<{
 const videoRef = ref<HTMLVideoElement>()
 let player: any = null
 const showAlertOverlay = ref(false)
+const showNormalOverlay = ref(false)
 const currentAlert = ref<Alert | null>(null)
 const authStore = useAuthStore()
 const isPlaying = ref(false)
+const realtimeStatus = ref<'analyzing' | 'normal' | 'alert' | null>(null)
 let progressInterval: number | null = null
+let normalOverlayTimer: number | null = null
 
 // 状态指示器
 const showStatusIndicator = computed(() => {
-  return isPlaying.value || props.detectionSummary != null
+  return isPlaying.value || props.detectionSummary != null || realtimeStatus.value != null
 })
 
 const statusIndicatorClass = computed(() => {
+  // 优先使用实时状态
+  if (realtimeStatus.value) {
+    if (realtimeStatus.value === 'normal') return 'status-normal'
+    if (realtimeStatus.value === 'alert') return 'status-alert'
+    return 'status-analyzing'
+  }
   if (isPlaying.value) return 'status-analyzing'
   if (!props.detectionSummary) return ''
   return `status-${props.detectionSummary.status}`
 })
 
 const statusText = computed(() => {
+  // 优先使用实时状态
+  if (realtimeStatus.value) {
+    if (realtimeStatus.value === 'normal') return '画面正常'
+    if (realtimeStatus.value === 'alert') return '检测到异常'
+    return '实时检测中'
+  }
   if (isPlaying.value) return '实时检测中'
   if (!props.detectionSummary) return ''
   if (props.detectionSummary.status === 'normal') {
@@ -207,6 +222,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopProgressReporting()
+  if (normalOverlayTimer) {
+    clearTimeout(normalOverlayTimer)
+  }
   emit('stopPlayback')
   if (player) {
     player.dispose()
@@ -269,14 +287,42 @@ watch(() => props.detectionStatus, (newStatus) => {
       // 预警消息
       currentAlert.value = newStatus.alertData
       showAlertOverlay.value = true
+      showNormalOverlay.value = false
+      realtimeStatus.value = 'alert'
+
+      // 清除之前的正常状态定时器
+      if (normalOverlayTimer) {
+        clearTimeout(normalOverlayTimer)
+        normalOverlayTimer = null
+      }
 
       if (player) {
         player.pause()
         setTimeout(() => {
           showAlertOverlay.value = false
+          realtimeStatus.value = 'analyzing'
           player.play()
         }, 3000)
       }
+    } else if (newStatus.type === 'normal') {
+      // 无异常消息 - 短暂显示"画面正常"
+      showNormalOverlay.value = true
+      realtimeStatus.value = 'normal'
+
+      // 清除之前的定时器
+      if (normalOverlayTimer) {
+        clearTimeout(normalOverlayTimer)
+      }
+
+      // 3秒后恢复为检测中状态
+      normalOverlayTimer = window.setTimeout(() => {
+        showNormalOverlay.value = false
+        if (isPlaying.value) {
+          realtimeStatus.value = 'analyzing'
+        } else {
+          realtimeStatus.value = null
+        }
+      }, 3000)
     }
   }
 })
