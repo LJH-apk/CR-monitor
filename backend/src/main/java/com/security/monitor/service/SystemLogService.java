@@ -66,28 +66,37 @@ public class SystemLogService {
     }
 
     @Async
-    public void logUpload(Long userId, String username, String message, String details) {
-        SystemLog log = SystemLog.uploadLog(userId, username, message, details);
+    public void logUpload(Long userId, String username, String message, String details,
+                          String ipAddress, String userAgent) {
+        SystemLog log = SystemLog.uploadLog(userId, username, message, details, ipAddress, userAgent);
+        log.setLocation(resolveLocation(ipAddress));
         saveLogAsync(log);
     }
 
     @Async
-    public void logDelete(Long userId, String username, String message, String details) {
-        SystemLog log = SystemLog.deleteLog(userId, username, message, details);
+    public void logDelete(Long userId, String username, String message, String details,
+                          String ipAddress, String userAgent) {
+        SystemLog log = SystemLog.deleteLog(userId, username, message, details, ipAddress, userAgent);
+        log.setLocation(resolveLocation(ipAddress));
         saveLogAsync(log);
     }
 
     @Async
     public void logUserManagement(Long operatorId, String operatorName,
-                                   String action, String targetUser, String details) {
-        SystemLog log = SystemLog.userManagementLog(operatorId, operatorName, action, targetUser, details);
+                                   String action, String targetUser, String details,
+                                   String ipAddress, String userAgent) {
+        SystemLog log = SystemLog.userManagementLog(operatorId, operatorName, action, targetUser, details,
+                ipAddress, userAgent);
+        log.setLocation(resolveLocation(ipAddress));
         saveLogAsync(log);
     }
 
     @Async
     public void logConfig(Long userId, String username,
-                          String action, String target, String details) {
-        SystemLog log = SystemLog.configLog(userId, username, action, target, details);
+                          String action, String target, String details,
+                          String ipAddress, String userAgent) {
+        SystemLog log = SystemLog.configLog(userId, username, action, target, details, ipAddress, userAgent);
+        log.setLocation(resolveLocation(ipAddress));
         saveLogAsync(log);
     }
 

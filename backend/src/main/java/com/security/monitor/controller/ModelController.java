@@ -1,6 +1,7 @@
 package com.security.monitor.controller;
 
 import com.security.monitor.service.SystemLogService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -46,7 +47,7 @@ public class ModelController {
     }
 
     @PostMapping("/swap")
-    public ResponseEntity<?> swapModel(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> swapModel(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
         String version = request.get("version");
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(
@@ -54,8 +55,12 @@ public class ModelController {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                String ipAddress = getClientIpAddress(httpRequest);
+                String userAgent = httpRequest.getHeader("User-Agent");
                 systemLogService.logConfig(null, auth.getName(),
-                    "模型热替换", version, "切换到版本: " + version);
+                    "模型热替换", version,
+                    String.format("切换到版本: %s", version),
+                    ipAddress, userAgent);
             }
             return response;
         } catch (Exception e) {
@@ -65,7 +70,8 @@ public class ModelController {
     }
 
     @PostMapping("/rollback")
-    public ResponseEntity<?> rollbackModel(@RequestBody(required = false) Map<String, String> request) {
+    public ResponseEntity<?> rollbackModel(@RequestBody(required = false) Map<String, String> request,
+                                            HttpServletRequest httpRequest) {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(
                 aiServiceUrl + "/api/models/rollback", request, String.class);
@@ -73,8 +79,12 @@ public class ModelController {
             if (response.getStatusCode().is2xxSuccessful()) {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                 String version = request != null ? request.get("version") : "上一版本";
+                String ipAddress = getClientIpAddress(httpRequest);
+                String userAgent = httpRequest.getHeader("User-Agent");
                 systemLogService.logConfig(null, auth.getName(),
-                    "模型回滚", version != null ? version : "上一版本", "回滚模型版本");
+                    "模型回滚", version != null ? version : "上一版本",
+                    "回滚模型版本",
+                    ipAddress, userAgent);
             }
             return response;
         } catch (Exception e) {
@@ -104,17 +114,21 @@ public class ModelController {
     }
 
     @PostMapping("/training/start")
-    public ResponseEntity<?> startTraining(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> startTraining(@RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(
                 aiServiceUrl + "/api/training/start", request, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                String ipAddress = getClientIpAddress(httpRequest);
+                String userAgent = httpRequest.getHeader("User-Agent");
                 systemLogService.logConfig(null, auth.getName(),
                     "启动模型训练", "增量训练",
-                    String.format("轮数: %s, 批次: %s",
-                        request.get("epochs"), request.get("batch_size")));
+                    String.format("轮数: %s, 批次大小: %s, 自动切换: %s",
+                        request.get("epochs"), request.get("batch_size"),
+                        request.get("auto_swap") != null && (Boolean) request.get("auto_swap") ? "是" : "否"),
+                    ipAddress, userAgent);
             }
             return response;
         } catch (Exception e) {
@@ -124,20 +138,36 @@ public class ModelController {
     }
 
     @PostMapping("/training/cancel")
-    public ResponseEntity<?> cancelTraining() {
+    public ResponseEntity<?> cancelTraining(HttpServletRequest httpRequest) {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(
                 aiServiceUrl + "/api/training/cancel", null, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                String ipAddress = getClientIpAddress(httpRequest);
+                String userAgent = httpRequest.getHeader("User-Agent");
                 systemLogService.logConfig(null, auth.getName(),
-                    "取消模型训练", "增量训练", "用户取消训练任务");
+                    "取消模型训练", "增量训练",
+                    "用户取消训练任务",
+                    ipAddress, userAgent);
             }
             return response;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of("code", 500, "message", "AI服务不可用"));
         }
+    }
+
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
     }
 }

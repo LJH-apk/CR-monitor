@@ -142,11 +142,14 @@ public class VideoController {
     @PostMapping("/upload")
     public ResponseEntity<VideoUploadResponse> uploadVideo(
             @RequestParam("file") MultipartFile file,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader,
+            jakarta.servlet.http.HttpServletRequest request) {
 
         try {
             String token = authHeader.substring(7);
             Long userId = jwtUtil.extractUserId(token);
+            String ipAddress = getClientIpAddress(request);
+            String userAgent = request.getHeader("User-Agent");
 
             // 安全：验证文件类型和大小
             validateVideoFile(file);
@@ -192,7 +195,8 @@ public class VideoController {
             String username = userRepository.findById(userId).map(u -> u.getUsername()).orElse("unknown");
             systemLogService.logUpload(userId, username,
                     "上传视频: " + originalFilename,
-                    String.format("视频ID: %d, 文件大小: %.2fMB", video.getId(), file.getSize() / 1024.0 / 1024.0));
+                    String.format("视频ID: %d, 文件大小: %.2fMB", video.getId(), file.getSize() / 1024.0 / 1024.0),
+                    ipAddress, userAgent);
 
             logger.info("Video uploaded successfully: {}", video.getId());
 
@@ -250,10 +254,13 @@ public class VideoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVideo(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader,
+            jakarta.servlet.http.HttpServletRequest request) {
 
         String token = authHeader.substring(7);
         Long userId = jwtUtil.extractUserId(token);
+        String ipAddress = getClientIpAddress(request);
+        String userAgent = request.getHeader("User-Agent");
 
         // 安全：验证用户是否拥有该视频
         if (!canAccessVideo(id, userId)) {
@@ -268,7 +275,8 @@ public class VideoController {
                 String username = userRepository.findById(userId).map(u -> u.getUsername()).orElse("unknown");
                 systemLogService.logDelete(userId, username,
                         "删除视频: " + video.getOriginalFilename(),
-                        String.format("视频ID: %d, 原始文件: %s", video.getId(), video.getOriginalPath()));
+                        String.format("视频ID: %d, 原始文件: %s", video.getId(), video.getOriginalPath()),
+                        ipAddress, userAgent);
 
                 // 删除原始文件
                 File originalFile = new File(video.getOriginalPath());
@@ -306,6 +314,21 @@ public class VideoController {
             }
         }
         directory.delete();
+    }
+
+    /**
+     * 获取客户端真实IP地址
+     */
+    private String getClientIpAddress(jakarta.servlet.http.HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
     }
 
     @GetMapping("/{id}/analysis-progress")

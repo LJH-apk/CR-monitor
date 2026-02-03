@@ -186,6 +186,9 @@
               <el-tag v-if="row.loginSuccess" type="success" size="small">成功</el-tag>
               <el-tag v-else type="danger" size="small">失败</el-tag>
             </template>
+            <template v-else-if="row.loginSuccess === true">
+              <el-tag type="success" size="small">已登录</el-tag>
+            </template>
             <el-text v-else type="info">-</el-text>
           </template>
         </el-table-column>

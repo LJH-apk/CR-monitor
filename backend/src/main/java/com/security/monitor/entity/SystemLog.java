@@ -110,7 +110,8 @@ public class SystemLog {
         return log;
     }
 
-    public static SystemLog uploadLog(Long userId, String username, String message, String details) {
+    public static SystemLog uploadLog(Long userId, String username, String message, String details,
+                                        String ipAddress, String userAgent) {
         SystemLog log = new SystemLog();
         log.setLevel("INFO");
         log.setType("UPLOAD");
@@ -118,10 +119,14 @@ public class SystemLog {
         log.setUsername(username);
         log.setMessage(message);
         log.setDetails(details);
+        log.setIpAddress(ipAddress);
+        log.setUserAgent(userAgent);
+        log.setLoginSuccess(true);  // 已登录状态
         return log;
     }
 
-    public static SystemLog deleteLog(Long userId, String username, String message, String details) {
+    public static SystemLog deleteLog(Long userId, String username, String message, String details,
+                                       String ipAddress, String userAgent) {
         SystemLog log = new SystemLog();
         log.setLevel("WARN");
         log.setType("DELETE");
@@ -129,11 +134,15 @@ public class SystemLog {
         log.setUsername(username);
         log.setMessage(message);
         log.setDetails(details);
+        log.setIpAddress(ipAddress);
+        log.setUserAgent(userAgent);
+        log.setLoginSuccess(true);  // 已登录状态
         return log;
     }
 
     public static SystemLog userManagementLog(Long operatorId, String operatorName,
-                                               String action, String targetUser, String details) {
+                                               String action, String targetUser, String details,
+                                               String ipAddress, String userAgent) {
         SystemLog log = new SystemLog();
         log.setLevel("INFO");
         log.setType("USER_MGMT");
@@ -141,11 +150,15 @@ public class SystemLog {
         log.setUsername(operatorName);
         log.setMessage(action + ": " + targetUser);
         log.setDetails(details);
+        log.setIpAddress(ipAddress);
+        log.setUserAgent(userAgent);
+        log.setLoginSuccess(true);  // 已登录状态
         return log;
     }
 
     public static SystemLog configLog(Long userId, String username,
-                                       String action, String target, String details) {
+                                       String action, String target, String details,
+                                       String ipAddress, String userAgent) {
         SystemLog log = new SystemLog();
         log.setLevel("INFO");
         log.setType("CONFIG");
@@ -153,6 +166,9 @@ public class SystemLog {
         log.setUsername(username);
         log.setMessage(action + ": " + target);
         log.setDetails(details);
+        log.setIpAddress(ipAddress);
+        log.setUserAgent(userAgent);
+        log.setLoginSuccess(true);  // 已登录状态
         return log;
     }
 }

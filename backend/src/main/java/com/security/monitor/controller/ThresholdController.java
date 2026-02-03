@@ -4,6 +4,7 @@ import com.security.monitor.entity.AlertThreshold;
 import com.security.monitor.repository.AlertThresholdRepository;
 import com.security.monitor.service.CacheService;
 import com.security.monitor.service.SystemLogService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,33 +49,56 @@ public class ThresholdController {
     }
 
     @PostMapping
-    public ResponseEntity<AlertThreshold> createThreshold(@RequestBody AlertThreshold threshold) {
+    public ResponseEntity<AlertThreshold> createThreshold(@RequestBody AlertThreshold threshold,
+                                                           HttpServletRequest request) {
         AlertThreshold saved = thresholdRepository.save(threshold);
         invalidateCache(threshold.getDangerBehaviorId());
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String ipAddress = getClientIpAddress(request);
+        String userAgent = request.getHeader("User-Agent");
         systemLogService.logConfig(null, auth.getName(),
             "创建告警阈值", "行为ID:" + saved.getDangerBehaviorId(),
-            String.format("阈值ID: %d, 置信度: %.2f", saved.getId(), saved.getConfidenceThreshold()));
+            String.format("阈值ID: %d, 置信度: %.2f, 时间窗口: %ds, 最大告警数: %d, 状态: %s",
+                saved.getId(), saved.getConfidenceThreshold(), saved.getTimeWindowSeconds(),
+                saved.getMaxAlertsPerWindow(), saved.getIsActive() ? "启用" : "禁用"),
+            ipAddress, userAgent);
         return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<AlertThreshold> updateThreshold(
             @PathVariable Long id,
-            @RequestBody AlertThreshold threshold) {
+            @RequestBody AlertThreshold threshold,
+            HttpServletRequest request) {
+
+        String ipAddress = getClientIpAddress(request);
+        String userAgent = request.getHeader("User-Agent");
 
         return thresholdRepository.findById(id)
                 .map(existing -> {
-                    if (threshold.getConfidenceThreshold() != null) {
+                    StringBuilder changes = new StringBuilder();
+                    if (threshold.getConfidenceThreshold() != null &&
+                        !threshold.getConfidenceThreshold().equals(existing.getConfidenceThreshold())) {
+                        changes.append(String.format("置信度: %.2f -> %.2f; ",
+                            existing.getConfidenceThreshold(), threshold.getConfidenceThreshold()));
                         existing.setConfidenceThreshold(threshold.getConfidenceThreshold());
                     }
-                    if (threshold.getTimeWindowSeconds() != null) {
+                    if (threshold.getTimeWindowSeconds() != null &&
+                        !threshold.getTimeWindowSeconds().equals(existing.getTimeWindowSeconds())) {
+                        changes.append(String.format("时间窗口: %ds -> %ds; ",
+                            existing.getTimeWindowSeconds(), threshold.getTimeWindowSeconds()));
                         existing.setTimeWindowSeconds(threshold.getTimeWindowSeconds());
                     }
-                    if (threshold.getMaxAlertsPerWindow() != null) {
+                    if (threshold.getMaxAlertsPerWindow() != null &&
+                        !threshold.getMaxAlertsPerWindow().equals(existing.getMaxAlertsPerWindow())) {
+                        changes.append(String.format("最大告警数: %d -> %d; ",
+                            existing.getMaxAlertsPerWindow(), threshold.getMaxAlertsPerWindow()));
                         existing.setMaxAlertsPerWindow(threshold.getMaxAlertsPerWindow());
                     }
-                    if (threshold.getIsActive() != null) {
+                    if (threshold.getIsActive() != null &&
+                        !threshold.getIsActive().equals(existing.getIsActive())) {
+                        changes.append(String.format("状态: %s -> %s; ",
+                            existing.getIsActive() ? "启用" : "禁用", threshold.getIsActive() ? "启用" : "禁用"));
                         existing.setIsActive(threshold.getIsActive());
                     }
                     AlertThreshold updated = thresholdRepository.save(existing);
@@ -82,28 +106,45 @@ public class ThresholdController {
                     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                     systemLogService.logConfig(null, auth.getName(),
                         "更新告警阈值", "阈值ID:" + id,
-                        String.format("置信度: %.2f, 时间窗口: %ds",
-                            existing.getConfidenceThreshold(), existing.getTimeWindowSeconds()));
+                        String.format("行为ID: %d, 变更: %s", existing.getDangerBehaviorId(),
+                            changes.length() > 0 ? changes.toString() : "无字段变更"),
+                        ipAddress, userAgent);
                     return ResponseEntity.ok(updated);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteThreshold(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteThreshold(@PathVariable Long id, HttpServletRequest request) {
         thresholdRepository.findById(id).ifPresent(threshold -> {
             Long behaviorId = threshold.getDangerBehaviorId();
+            String ipAddress = getClientIpAddress(request);
+            String userAgent = request.getHeader("User-Agent");
             thresholdRepository.deleteById(id);
             invalidateCache(behaviorId);
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             systemLogService.logConfig(null, auth.getName(),
                 "删除告警阈值", "阈值ID:" + id,
-                String.format("行为ID: %d", behaviorId));
+                String.format("行为ID: %d, 置信度: %.2f, 时间窗口: %ds",
+                    behaviorId, threshold.getConfidenceThreshold(), threshold.getTimeWindowSeconds()),
+                ipAddress, userAgent);
         });
         return ResponseEntity.ok().build();
     }
 
     private void invalidateCache(Long behaviorId) {
         cacheService.delete("config:thresholds:" + behaviorId);
+    }
+
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
     }
 }
