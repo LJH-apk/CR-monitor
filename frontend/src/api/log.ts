@@ -3,7 +3,7 @@ import apiClient from './axios'
 export interface SystemLog {
   id: number
   level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
-  type: 'LOGIN' | 'LOGOUT' | 'ERROR' | 'OPERATION' | 'SYSTEM'
+  type: 'LOGIN' | 'LOGOUT' | 'UPLOAD' | 'DELETE' | 'USER_MGMT' | 'CONFIG' | 'ERROR' | 'OPERATION' | 'SYSTEM'
   message: string
   details?: string
   userId?: number

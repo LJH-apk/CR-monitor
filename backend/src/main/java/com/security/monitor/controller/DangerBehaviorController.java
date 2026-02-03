@@ -3,9 +3,12 @@ package com.security.monitor.controller;
 import com.security.monitor.entity.DangerBehavior;
 import com.security.monitor.repository.DangerBehaviorRepository;
 import com.security.monitor.service.CacheService;
+import com.security.monitor.service.SystemLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +23,9 @@ public class DangerBehaviorController {
 
     @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private SystemLogService systemLogService;
 
     @GetMapping
     public ResponseEntity<List<DangerBehavior>> getAllBehaviors() {
@@ -44,6 +50,10 @@ public class DangerBehaviorController {
     public ResponseEntity<DangerBehavior> createBehavior(@RequestBody DangerBehavior behavior) {
         DangerBehavior saved = dangerBehaviorRepository.save(behavior);
         invalidateCache();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        systemLogService.logConfig(null, auth.getName(),
+            "创建危险行为", saved.getName(),
+            String.format("ID: %d, 严重级别: %d", saved.getId(), saved.getSeverityLevel()));
         return ResponseEntity.ok(saved);
     }
 
@@ -61,6 +71,10 @@ public class DangerBehaviorController {
                     existing.setIsActive(behavior.getIsActive());
                     DangerBehavior updated = dangerBehaviorRepository.save(existing);
                     invalidateCache();
+                    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                    systemLogService.logConfig(null, auth.getName(),
+                        "更新危险行为", existing.getName(),
+                        String.format("ID: %d", id));
                     return ResponseEntity.ok(updated);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -68,8 +82,16 @@ public class DangerBehaviorController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBehavior(@PathVariable Long id) {
-        dangerBehaviorRepository.deleteById(id);
-        invalidateCache();
+        DangerBehavior behavior = dangerBehaviorRepository.findById(id).orElse(null);
+        if (behavior != null) {
+            String behaviorName = behavior.getName();
+            dangerBehaviorRepository.deleteById(id);
+            invalidateCache();
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            systemLogService.logConfig(null, auth.getName(),
+                "删除危险行为", behaviorName,
+                String.format("ID: %d", id));
+        }
         return ResponseEntity.ok().build();
     }
 

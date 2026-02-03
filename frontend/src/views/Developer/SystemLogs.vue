@@ -83,6 +83,10 @@
           <el-select v-model="filters.type" placeholder="全部" clearable style="width: 120px">
             <el-option label="登录" value="LOGIN" />
             <el-option label="登出" value="LOGOUT" />
+            <el-option label="上传" value="UPLOAD" />
+            <el-option label="删除" value="DELETE" />
+            <el-option label="用户管理" value="USER_MGMT" />
+            <el-option label="配置管理" value="CONFIG" />
             <el-option label="错误" value="ERROR" />
             <el-option label="操作" value="OPERATION" />
           </el-select>
@@ -300,6 +304,10 @@ const getTypeTagType = (type: string) => {
   const map: Record<string, string> = {
     LOGIN: '',
     LOGOUT: 'info',
+    UPLOAD: 'success',
+    DELETE: 'danger',
+    USER_MGMT: 'warning',
+    CONFIG: '',
     ERROR: 'danger',
     OPERATION: 'warning',
     SYSTEM: 'info'
@@ -311,6 +319,10 @@ const getTypeLabel = (type: string) => {
   const map: Record<string, string> = {
     LOGIN: '登录',
     LOGOUT: '登出',
+    UPLOAD: '上传',
+    DELETE: '删除',
+    USER_MGMT: '用户管理',
+    CONFIG: '配置管理',
     ERROR: '错误',
     OPERATION: '操作',
     SYSTEM: '系统'

@@ -1,16 +1,19 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 请始终使用简体中文与我对话，并在回答时保持专业、简洁
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+请遵循以下版本号规则，并在完成对应任务后修改前端显示、后端项目中的版本号。版本号规则如下：1.版本号采用三位版本号，如：1.5.3；2.每当完成一个子功能时，版本第二位加一，且第三位重置归零，如1.5.3 -> 1.6.0；3.当修复子功能的bug以及错误时，仅在版本号第三位加一，如：1.5.3 -> 1.5.4。其中子功能为多路监控这类牵扯多文件创建与修改的复杂功能，子功能bug为一些仅在单个或几个文件中修改的逻辑和处理问题。
 
 ## Project Overview
 
-**Intelligent Security Monitoring System** - A full-stack video surveillance platform with simulated AI-powered danger detection and real-time alerting.
+**Intelligent Security Monitoring System** (v1.5.4) - A full-stack video surveillance platform with AI-powered danger detection and real-time alerting.
 
 This is a monorepo containing:
 - **Backend**: Spring Boot 3.2.1 REST API (Java 17)
 - **Frontend**: Vue 3 + TypeScript SPA
+- **AI Service**: Python Flask + YOLO11 + Qwen-VL
 - **Storage**: Shared file storage for video uploads and HLS transcoding
 
 ## Prerequisites
@@ -21,65 +24,43 @@ This is a monorepo containing:
 - MySQL 8.0+
 - Redis 7.0+
 - FFmpeg 5.0+ (for video transcoding)
+- Python 3.10+ (for AI service)
 
 ## Common Commands
 
 ### Backend (from `/backend` directory)
 
 ```bash
-# Run in development mode
-mvn spring-boot:run
-
-# Build JAR
-mvn clean package
-
-# Run tests
-mvn test
-
-# Run specific test class
-mvn test -Dtest=VideoProcessingServiceTest
-
-# Clean build artifacts
-mvn clean
+mvn spring-boot:run          # Run in development mode
+mvn clean package            # Build JAR
+mvn test                     # Run tests
+mvn test -Dtest=VideoProcessingServiceTest  # Run specific test
 ```
 
 ### Frontend (from `/frontend` directory)
 
 ```bash
-# Install dependencies
-npm install
-
-# Run development server (port 5173)
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Type check
-vue-tsc -b
+npm install                  # Install dependencies
+npm run dev                  # Run development server (port 5173)
+npm run build                # Build for production
+vue-tsc -b                   # Type check
 ```
 
-### Database Setup
+### AI Service (from `/ai-service` directory)
 
 ```bash
-# Create database
-mysql -u root -p
-CREATE DATABASE security_monitor;
+pip install -r requirements.txt  # Install dependencies
+python app.py                    # Run service (port 5001)
+```
 
+### Database & Redis
+
+```bash
+mysql -u root -p -e "CREATE DATABASE security_monitor;"  # Create database
 # Flyway migrations run automatically on backend startup
-```
 
-### Redis
-
-```bash
-# Start Redis (macOS)
-brew services start redis
-
-# Check Redis connection
-redis-cli ping  # Should return PONG
+brew services start redis    # Start Redis (macOS)
+redis-cli ping               # Verify Redis connection
 ```
 
 ## Architecture
@@ -88,180 +69,150 @@ redis-cli ping  # Should return PONG
 
 **Layered Structure**: Controller → Service → Repository → Entity
 
-- **Controllers** (`controller/`): REST endpoints with JWT authentication
-- **Services** (`service/`): Business logic including video processing and AI detection
-- **Repositories** (`repository/`): Spring Data JPA interfaces
-- **Entities** (`entity/`): JPA entities mapped to MySQL tables
-- **Config** (`config/`): Spring configuration including Security, WebSocket, Redis, Async
-- **Utils** (`util/`): FFmpeg wrapper and JWT utilities
-
 **Key Services**:
-- `VideoProcessingService`: Orchestrates async video transcoding via FFmpeg
-- `FrameAnalysisService`: Simulates AI detection (5% probability per second, confidence 0.6-1.0)
-- `AlertPushService`: Pushes alerts via WebSocket to connected clients
-- `CacheService`: Redis operations for performance optimization
+- `VideoProcessingService`: Async video transcoding via FFmpeg
+- `FrameAnalysisService` / `RealtimeAnalysisService`: AI detection orchestration
+- `AlertPushService`: WebSocket alert push with `DetectionStatusMessage` (alert/normal types)
+- `SystemLogService`: Audit logging for uploads, deletions, user management
+- `CacheService`: Redis operations
 
 **Video Processing Flow**:
 1. Upload → `storage/uploads/{userId}/{uuid}_{filename}.mp4`
-2. Async transcoding → FFmpeg converts to HLS format
-3. Output → `storage/transcoded/{videoId}/playlist.m3u8` + segments
-4. Frame analysis → Simulated AI detection runs
-5. Alert generation → Based on confidence thresholds
-6. WebSocket push → Real-time notifications
+2. Async transcoding → FFmpeg converts to HLS
+3. Output → `storage/transcoded/{videoId}/playlist.m3u8`
+4. Frame analysis → AI detection via `/api/detect`
+5. Alert/Normal status → WebSocket push
 
 ### Frontend Architecture
 
 **State Management**: Pinia stores in `store/modules/`
-- `auth.ts`: User authentication state and JWT token
-- `video.ts`: Video list and current video
-- `alert.ts`: Alert history and real-time alerts
-- `config.ts`: Danger behaviors and thresholds
+- `auth.ts`, `video.ts`, `alert.ts`, `config.ts`
 
-**Routing** (`router/index.ts`):
-- `/login`: Authentication
-- `/dashboard`: Main monitoring view (video player + alerts + charts)
-- `/admin/behaviors`: Danger behavior management (admin only)
-- `/admin/thresholds`: Alert threshold configuration (admin only)
-- `/admin/videos`: Video upload and management (admin only)
+**Key Views**:
+- `/dashboard`: Single video monitoring with real-time detection
+- `/multi-monitor`: 2x3 grid multi-video monitoring
+- `/admin/*`: Admin management pages
+- `/developer/logs`: System logs (DEVELOPER role only)
 
-**Key Components**:
-- `VideoPlayer.vue`: Video.js HLS player with pause-on-alert functionality
-- `AlertPanel.vue`: Real-time alert display with WebSocket integration
-- `AlertChart.vue`: ECharts visualization of alert statistics
+**Key Composables**:
+- `useWebSocket.ts`: WebSocket connection and message handling
+- `useMultiVideoState.ts`: Multi-video state management for grid view
+
+**Detection Status Flow**:
+- `VideoPlayer.vue` receives `detectionStatus` prop
+- Shows status indicator: "实时检测中" / "画面正常" / "检测到异常"
+- Alert overlay pauses video for 3 seconds
+
+### AI Service Architecture
+
+**Components**:
+- `YOLODetector`: Object detection with hot-swappable model versions
+- `QwenAnalyzer`: Multi-modal analysis via DashScope API
+- `ModelManager`: Version management for incremental training
+- `YOLOTrainer`: Training pipeline with COCO format support
+
+**Endpoints**:
+- `GET /api/health`: Service health check
+- `POST /api/detect`: Frame detection (base64 image)
+- `GET /api/model/versions`: List model versions
+- `POST /api/training/start`: Start incremental training
+- `POST /api/model/swap`: Hot-swap model version
 
 ### API Structure
 
 Base URL: `http://localhost:8080/api`
 
 - `/auth/*`: Login/logout
-- `/videos/*`: Upload, list, get, delete videos
+- `/videos/*`: Upload, list, get, delete
 - `/alerts/*`: Alert history, acknowledgment
-- `/admin/danger-behaviors/*`: CRUD for danger types
-- `/admin/thresholds/*`: CRUD for alert thresholds
-- `/dashboard/stats`: Aggregated statistics
+- `/admin/users/*`: User CRUD (SUPER_ADMIN/DEVELOPER)
+- `/admin/danger-behaviors/*`, `/admin/thresholds/*`: Config management
+- `/system-logs`: Audit logs (DEVELOPER only)
 - WebSocket: `ws://localhost:8080/api/ws/alerts?token={jwt}`
 
 ### Database Schema
 
-6 tables managed by Flyway migrations (`src/main/resources/db/migration/`):
-- `users`: User accounts (default: admin/admin123)
-- `videos`: Video metadata and transcoding status
-- `danger_behaviors`: Configurable danger types (Fighting, Falling, Intrusion, etc.)
-- `alert_thresholds`: Detection sensitivity per behavior
-- `alerts`: Generated security alerts
-- `alert_statistics`: Hourly aggregated metrics
+Tables managed by Flyway (`db/migration/`):
+- `users`: Accounts with roles (USER/ADMIN/SUPER_ADMIN/DEVELOPER)
+- `videos`: Video metadata and status
+- `danger_behaviors`, `alert_thresholds`: Detection config
+- `alerts`, `alert_statistics`: Alert data
+- `system_logs`: Audit trail
+- `training_samples`: AI training data with annotations
 
-### Redis Caching Strategy
+### Redis Keys
 
-- `video:{videoId}`: Video metadata (1h TTL)
-- `video:list:{userId}`: User's video list (5min TTL)
-- `config:danger_behaviors`: Active behaviors (1h TTL)
-- `config:thresholds:{behaviorId}`: Thresholds (1h TTL)
-- `alert:rate:{behaviorId}:{window}`: Rate limiting counters
-- `ws:sessions:{userId}`: Active WebSocket sessions
+- `video:{id}`, `video:list:{userId}`: Video cache
+- `config:danger_behaviors`, `config:thresholds:{id}`: Config cache
+- `transcoding:status:{videoId}`: Transcoding progress
+- `ws:sessions:{userId}`: WebSocket sessions
 
 ## Configuration
 
-### Backend (`backend/src/main/resources/application.yml`)
+### Backend (`application.yml`)
 
 - Server: Port 8080, context path `/api`
-- Database: `jdbc:mysql://localhost:3306/security_monitor`
-- Redis: localhost:6379
-- JWT: 24-hour expiration
-- File upload: Max 500MB
-- Storage paths: `./storage/{uploads,transcoded,thumbnails}`
-- FFmpeg: 10-second HLS segments, medium preset
+- Storage: `./storage/{uploads,transcoded,thumbnails,training-samples}`
+- AI Service: `http://localhost:5001`
+- Frame analysis: `consecutive-frames: 3`, `cycle-frames: 5`, `realtime-interval: 2`
 
-### Frontend (`frontend/vite.config.ts`)
+### Frontend (`vite.config.ts`)
 
 - Dev server: Port 5173
 - API proxy: `/api` → `http://localhost:8080`
-- Path alias: `@` → `src/`
+
+### AI Service (`config.py`)
+
+- YOLO model path, DashScope API key
+- Backend URL for sample fetching
 
 ## Important Implementation Details
 
-### JWT Authentication
+### Role-Based Access
 
-- JWT tokens stored in localStorage
-- Axios interceptor adds `Authorization: Bearer {token}` header
-- `JwtAuthenticationFilter` validates tokens on backend
-- Token contains: userId, username, role, expiration
+- `USER`: View monitoring, upload samples
+- `ADMIN`: + Video management, config, sample review
+- `SUPER_ADMIN`: + User management
+- `DEVELOPER`: + System logs, all debug features
 
-### Video Transcoding
+### WebSocket Message Types
 
-- FFmpeg command: `ffmpeg -i input.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls output.m3u8`
-- Runs asynchronously via `@Async` with thread pool
-- Status progression: UPLOADING → TRANSCODING → READY → (FAILED on error)
-- Generates thumbnail: `ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 thumbnail.jpg`
+```typescript
+// Alert message
+{ type: 'alert', videoId: number, alertData: Alert }
 
-### Simulated AI Detection
+// Normal status (detection cycle complete, no anomaly)
+{ type: 'normal', videoId: number, analyzedFrames: number, message: string }
+```
 
-- Detection rate: 5% probability per second of video
-- Confidence: Random 0.6-1.0
-- Behavior selection: Random from active danger behaviors
-- Alert creation: Only if confidence >= threshold
-- Rate limiting: Respects max alerts per time window
+### System Logging
 
-### WebSocket Real-time Alerts
+Logged operations (via `SystemLogService`):
+- LOGIN/LOGOUT: User authentication
+- UPLOAD/DELETE: Video operations
+- USER_MGMT: User create/update/delete/role change
+- ERROR: System errors
 
-- Connection: `ws://localhost:8080/api/ws/alerts?token={jwt}`
-- Frontend auto-connects on dashboard mount
-- Video player pauses for 3 seconds on alert
-- Alert overlay displays danger type and confidence
+## Default Credentials
 
-### Static Resource Access
-
-- `WebConfig` maps `/storage/**` to `file:./storage/`
-- HLS playlists and segments served as static files
-- Security config permits `/storage/**` without authentication
+| Role | Username | Password |
+|------|----------|----------|
+| DEVELOPER | developer | admin123 |
+| SUPER_ADMIN | admin | admin123 |
+| ADMIN | admin1 | admin123 |
+| USER | user1 | admin123 |
 
 ## Troubleshooting
 
 ### Backend won't start
-- Check Java version: `java -version` (must be 17+)
-- Verify MySQL running: `mysql -u root -p`
-- Verify Redis running: `redis-cli ping`
-- Check FFmpeg installed: `ffmpeg -version`
+- Check: `java -version` (17+), MySQL running, Redis running, FFmpeg installed
 
 ### Video transcoding fails
-- Ensure FFmpeg in PATH
-- Check storage directory permissions
-- Review logs for FFmpeg errors
-- Verify video format is supported (MP4 recommended)
-
-### Redis serialization errors
-- `RedisConfig` must register `JavaTimeModule` for LocalDateTime support
-- Use `Jackson2JsonRedisSerializer` with custom ObjectMapper
-
-### Frontend can't connect to backend
-- Verify backend running on port 8080
-- Check Vite proxy configuration
-- Ensure CORS enabled in `CorsConfig`
+- Ensure FFmpeg in PATH, check storage permissions
 
 ### WebSocket connection fails
-- JWT token must be valid and not expired
-- Check token format: `?token={jwt}` (no "Bearer " prefix)
-- Verify WebSocket endpoint: `/api/ws/alerts`
+- JWT must be valid, use `?token={jwt}` (no "Bearer " prefix)
 
-## Default Credentials
-
-- Username: `admin`
-- Password: `admin123`
-- Role: `ADMIN`
-
-## Testing
-
-### Test video upload
-```bash
-curl -X POST http://localhost:8080/api/videos/upload \
-  -H "Authorization: Bearer {token}" \
-  -F "file=@test-video.mp4"
-```
-
-### Test WebSocket
-```javascript
-const ws = new WebSocket('ws://localhost:8080/api/ws/alerts?token=' + token);
-ws.onmessage = (event) => {
-  console.log('Alert:', JSON.parse(event.data));
-};
-```
+### AI Service issues
+- Check DashScope API key in `config.py`
+- Verify YOLO model file exists

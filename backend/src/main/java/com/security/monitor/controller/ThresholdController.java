@@ -3,9 +3,12 @@ package com.security.monitor.controller;
 import com.security.monitor.entity.AlertThreshold;
 import com.security.monitor.repository.AlertThresholdRepository;
 import com.security.monitor.service.CacheService;
+import com.security.monitor.service.SystemLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +23,9 @@ public class ThresholdController {
 
     @Autowired
     private CacheService cacheService;
+
+    @Autowired
+    private SystemLogService systemLogService;
 
     @GetMapping
     public ResponseEntity<List<AlertThreshold>> getAllThresholds() {
@@ -45,6 +51,10 @@ public class ThresholdController {
     public ResponseEntity<AlertThreshold> createThreshold(@RequestBody AlertThreshold threshold) {
         AlertThreshold saved = thresholdRepository.save(threshold);
         invalidateCache(threshold.getDangerBehaviorId());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        systemLogService.logConfig(null, auth.getName(),
+            "创建告警阈值", "行为ID:" + saved.getDangerBehaviorId(),
+            String.format("阈值ID: %d, 置信度: %.2f", saved.getId(), saved.getConfidenceThreshold()));
         return ResponseEntity.ok(saved);
     }
 
@@ -61,6 +71,11 @@ public class ThresholdController {
                     existing.setIsActive(threshold.getIsActive());
                     AlertThreshold updated = thresholdRepository.save(existing);
                     invalidateCache(existing.getDangerBehaviorId());
+                    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                    systemLogService.logConfig(null, auth.getName(),
+                        "更新告警阈值", "阈值ID:" + id,
+                        String.format("置信度: %.2f, 时间窗口: %ds",
+                            existing.getConfidenceThreshold(), existing.getTimeWindowSeconds()));
                     return ResponseEntity.ok(updated);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -69,8 +84,13 @@ public class ThresholdController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteThreshold(@PathVariable Long id) {
         thresholdRepository.findById(id).ifPresent(threshold -> {
+            Long behaviorId = threshold.getDangerBehaviorId();
             thresholdRepository.deleteById(id);
-            invalidateCache(threshold.getDangerBehaviorId());
+            invalidateCache(behaviorId);
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            systemLogService.logConfig(null, auth.getName(),
+                "删除告警阈值", "阈值ID:" + id,
+                String.format("行为ID: %d", behaviorId));
         });
         return ResponseEntity.ok().build();
     }

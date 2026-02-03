@@ -143,4 +143,16 @@ public class SystemLog {
         log.setDetails(details);
         return log;
     }
+
+    public static SystemLog configLog(Long userId, String username,
+                                       String action, String target, String details) {
+        SystemLog log = new SystemLog();
+        log.setLevel("INFO");
+        log.setType("CONFIG");
+        log.setUserId(userId);
+        log.setUsername(username);
+        log.setMessage(action + ": " + target);
+        log.setDetails(details);
+        return log;
+    }
 }

@@ -84,6 +84,13 @@ public class SystemLogService {
         saveLogAsync(log);
     }
 
+    @Async
+    public void logConfig(Long userId, String username,
+                          String action, String target, String details) {
+        SystemLog log = SystemLog.configLog(userId, username, action, target, details);
+        saveLogAsync(log);
+    }
+
     public Page<SystemLogDTO> getLogs(String level, String type, Long userId,
                                        LocalDateTime startTime, LocalDateTime endTime,
                                        String keyword, Pageable pageable) {

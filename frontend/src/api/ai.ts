@@ -1,6 +1,7 @@
 import axios from 'axios'
+import apiClient from './axios'
 
-// AI 服务独立的 axios 实例（直接连接 AI 服务）
+// AI 服务独立的 axios 实例（直接连接 AI 服务，用于健康检查等）
 const aiClient = axios.create({
   baseURL: 'http://localhost:5001/api',
   timeout: 60000,
@@ -65,52 +66,52 @@ export interface TrainingHistory {
 }
 
 export const aiApi = {
-  // 健康检查
+  // 健康检查 - 直接调用 AI 服务
   health() {
     return aiClient.get('/health')
   },
 
-  // 获取所有模型版本
+  // 获取所有模型版本 - 通过后端代理
   getModelVersions() {
-    return aiClient.get<ModelVersionsResponse>('/models/versions')
+    return apiClient.get<ModelVersionsResponse>('/admin/models/versions')
   },
 
-  // 获取当前模型信息
+  // 获取当前模型信息 - 通过后端代理
   getCurrentModel() {
-    return aiClient.get('/models/current')
+    return apiClient.get('/admin/models/current')
   },
 
-  // 热替换模型
+  // 热替换模型 - 通过后端代理（记录日志）
   swapModel(version: string) {
-    return aiClient.post('/models/swap', { version })
+    return apiClient.post('/admin/models/swap', { version })
   },
 
-  // 回滚模型
+  // 回滚模型 - 通过后端代理（记录日志）
   rollbackModel(version?: string) {
-    return aiClient.post('/models/rollback', { version })
+    return apiClient.post('/admin/models/rollback', { version })
   },
 
-  // 开始训练
+  // 开始训练 - 通过后端代理（记录日志）
   startTraining(params: {
     epochs?: number
     batch_size?: number
     auto_swap?: boolean
   }) {
-    return aiClient.post('/training/start', params)
+    return apiClient.post('/admin/models/training/start', params)
   },
 
-  // 获取训练状态
+  // 获取训练状态 - 通过后端代理
   getTrainingStatus() {
-    return aiClient.get<{ code: number; data: TrainingStatus }>('/training/status')
+    return apiClient.get<{ code: number; data: TrainingStatus }>('/admin/models/training/status')
   },
 
-  // 取消训练
+  // 取消训练 - 通过后端代理（记录日志）
   cancelTraining() {
-    return aiClient.post('/training/cancel')
+    return apiClient.post('/admin/models/training/cancel')
   },
 
-  // 获取训练历史
+  // 获取训练历史 - 通过后端代理
   getTrainingHistory() {
-    return aiClient.get<{ code: number; data: TrainingHistory[] }>('/training/history')
+    return apiClient.get<{ code: number; data: TrainingHistory[] }>('/admin/models/training/history')
   }
 }
