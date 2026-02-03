@@ -24,10 +24,10 @@ public class UserManagementService {
     private PasswordEncoder passwordEncoder;
 
     /**
-     * 获取用户列表（分页）
+     * 获取用户列表（分页），隐藏 DEVELOPER 角色用户
      */
     public Page<UserDTO> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(this::convertToDTO);
+        return userRepository.findByRoleNot("DEVELOPER", pageable).map(this::convertToDTO);
     }
 
     /**

@@ -60,9 +60,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 检查是否是管理员（包括超级管理员）
+  // 检查是否是管理员（包括超级管理员和开发者）
   function isAdmin() {
-    return user.value?.role === 'ADMIN' || user.value?.role === 'SUPER_ADMIN'
+    return ['ADMIN', 'SUPER_ADMIN', 'DEVELOPER'].includes(user.value?.role || '')
   }
 
   // 检查是否是超级管理员
@@ -70,9 +70,14 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.role === 'SUPER_ADMIN'
   }
 
+  // 检查是否是开发者
+  function isDeveloper() {
+    return user.value?.role === 'DEVELOPER'
+  }
+
   // 检查是否是管理员或以上级别
   function isAdminOrAbove() {
-    return user.value?.role === 'ADMIN' || user.value?.role === 'SUPER_ADMIN'
+    return ['ADMIN', 'SUPER_ADMIN', 'DEVELOPER'].includes(user.value?.role || '')
   }
 
   return {
@@ -84,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     isAdmin,
     isSuperAdmin,
+    isDeveloper,
     isAdminOrAbove
   }
 })

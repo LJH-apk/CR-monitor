@@ -45,7 +45,8 @@
       "Bash(/Applications/Docker.app/Contents/Resources/bin/docker --version:*)",
       "Bash(sudo rm:*)",
       "Bash(sudo ln:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cat:*)"
     ]
   }
 }

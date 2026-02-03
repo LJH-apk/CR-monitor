@@ -18,7 +18,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/admin/users")
-@PreAuthorize("hasRole('SUPER_ADMIN')")
+@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEVELOPER')")
 public class UserManagementController {
 
     @Autowired
@@ -103,7 +103,7 @@ public class UserManagementController {
             @RequestBody Map<String, String> request) {
         try {
             String role = request.get("role");
-            if (role == null || !role.matches("USER|ADMIN|SUPER_ADMIN")) {
+            if (role == null || !role.matches("USER|ADMIN|SUPER_ADMIN|DEVELOPER")) {
                 return ResponseEntity.badRequest().build();
             }
             UserDTO user = userManagementService.updateUserRole(id, role);

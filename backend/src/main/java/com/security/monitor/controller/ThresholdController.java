@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/admin/thresholds")
-@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'DEVELOPER')")
 public class ThresholdController {
 
     @Autowired

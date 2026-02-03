@@ -24,6 +24,7 @@
       <el-menu-item index="/admin/thresholds">告警阈值配置</el-menu-item>
       <el-menu-item index="/admin/models">模型管理</el-menu-item>
       <el-menu-item index="/admin/users">用户管理</el-menu-item>
+      <el-menu-item v-if="authStore.isDeveloper()" index="/developer/logs">系统日志</el-menu-item>
     </el-menu>
 
     <el-card class="list-card">
@@ -83,6 +84,7 @@
             <el-option label="普通用户" value="USER" />
             <el-option label="管理员" value="ADMIN" />
             <el-option label="超级管理员" value="SUPER_ADMIN" />
+            <el-option label="开发者" value="DEVELOPER" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -113,6 +115,7 @@
             <el-option label="普通用户" value="USER" />
             <el-option label="管理员" value="ADMIN" />
             <el-option label="超级管理员" value="SUPER_ADMIN" />
+            <el-option label="开发者" value="DEVELOPER" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -130,8 +133,10 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { userApi, type UserDTO } from '@/api/user'
+import { useAuthStore } from '@/store/modules/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const users = ref<UserDTO[]>([])
 const loading = ref(false)
@@ -257,7 +262,8 @@ const getRoleType = (role: string) => {
   const map: Record<string, any> = {
     USER: 'info',
     ADMIN: 'warning',
-    SUPER_ADMIN: 'danger'
+    SUPER_ADMIN: 'danger',
+    DEVELOPER: 'success'
   }
   return map[role] || 'info'
 }
@@ -266,7 +272,8 @@ const getRoleText = (role: string) => {
   const map: Record<string, string> = {
     USER: '普通用户',
     ADMIN: '管理员',
-    SUPER_ADMIN: '超级管理员'
+    SUPER_ADMIN: '超级管理员',
+    DEVELOPER: '开发者'
   }
   return map[role] || role
 }

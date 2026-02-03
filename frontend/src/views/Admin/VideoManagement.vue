@@ -17,7 +17,8 @@
       <el-menu-item index="/admin/behaviors">危险行为管理</el-menu-item>
       <el-menu-item index="/admin/thresholds">告警阈值配置</el-menu-item>
       <el-menu-item index="/admin/models">模型管理</el-menu-item>
-      <el-menu-item v-if="authStore.isSuperAdmin()" index="/admin/users">用户管理</el-menu-item>
+      <el-menu-item v-if="authStore.isSuperAdmin() || authStore.isDeveloper()" index="/admin/users">用户管理</el-menu-item>
+      <el-menu-item v-if="authStore.isDeveloper()" index="/developer/logs">系统日志</el-menu-item>
     </el-menu>
 
     <el-card class="upload-card">

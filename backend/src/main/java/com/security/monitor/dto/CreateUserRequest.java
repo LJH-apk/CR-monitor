@@ -26,6 +26,6 @@ public class CreateUserRequest {
     private String email;
 
     @NotBlank(message = "角色不能为空")
-    @Pattern(regexp = "USER|ADMIN|SUPER_ADMIN", message = "角色必须是USER、ADMIN或SUPER_ADMIN")
+    @Pattern(regexp = "USER|ADMIN|SUPER_ADMIN|DEVELOPER", message = "角色必须是USER、ADMIN、SUPER_ADMIN或DEVELOPER")
     private String role;
 }

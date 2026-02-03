@@ -115,7 +115,7 @@ public class TrainingSampleController {
      * 更新样本状态（仅管理员）
      */
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'DEVELOPER')")
     public ResponseEntity<TrainingSampleDTO> updateSampleStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> request) {
@@ -135,7 +135,7 @@ public class TrainingSampleController {
      * 导出COCO JSON格式（仅管理员）
      */
     @GetMapping("/export/coco")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'DEVELOPER')")
     public ResponseEntity<CocoExportDTO> exportCoco() {
         try {
             CocoExportDTO cocoData = sampleService.exportCoco();

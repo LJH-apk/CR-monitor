@@ -22,6 +22,6 @@ public class UpdateUserRequest {
     @Email(message = "邮箱格式不正确")
     private String email;
 
-    @Pattern(regexp = "USER|ADMIN|SUPER_ADMIN", message = "角色必须是USER、ADMIN或SUPER_ADMIN")
+    @Pattern(regexp = "USER|ADMIN|SUPER_ADMIN|DEVELOPER", message = "角色必须是USER、ADMIN、SUPER_ADMIN或DEVELOPER")
     private String role;
 }

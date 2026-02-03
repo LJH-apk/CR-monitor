@@ -79,6 +79,12 @@ const router = createRouter({
       name: 'SampleReviewDetail',
       component: () => import('@/views/Samples/SampleReview.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/developer/logs',
+      name: 'SystemLogs',
+      component: () => import('@/views/Developer/SystemLogs.vue'),
+      meta: { requiresAuth: true, requiresDeveloper: true }
     }
   ]
 })
@@ -93,8 +99,14 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // 需要超级管理员权限的路由
-  if (to.meta.requiresSuperAdmin && !authStore.isSuperAdmin()) {
+  // 需要超级管理员权限的路由（开发者也可以访问）
+  if (to.meta.requiresSuperAdmin && !authStore.isSuperAdmin() && !authStore.isDeveloper()) {
+    next('/dashboard')
+    return
+  }
+
+  // 需要开发者权限的路由
+  if (to.meta.requiresDeveloper && !authStore.isDeveloper()) {
     next('/dashboard')
     return
   }

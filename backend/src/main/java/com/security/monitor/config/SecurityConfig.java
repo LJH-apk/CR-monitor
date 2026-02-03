@@ -33,8 +33,9 @@ public class SecurityConfig {
                         // 安全：移除了 /storage/** 的 permitAll，现在需要认证
                         .requestMatchers("/files/**").authenticated()  // 文件访问需要认证
                         .requestMatchers("/samples/**").authenticated()  // 样本上传所有认证用户可访问
-                        .requestMatchers("/admin/users/**").hasRole("SUPER_ADMIN")  // 用户管理仅超管
-                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")  // 管理功能
+                        .requestMatchers("/developer/**").hasRole("DEVELOPER")  // 开发者功能
+                        .requestMatchers("/admin/users/**").hasAnyRole("SUPER_ADMIN", "DEVELOPER")  // 用户管理
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "DEVELOPER")  // 管理功能
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
