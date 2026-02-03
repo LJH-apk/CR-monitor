@@ -109,4 +109,38 @@ public class SystemLog {
         log.setMessage(message);
         return log;
     }
+
+    public static SystemLog uploadLog(Long userId, String username, String message, String details) {
+        SystemLog log = new SystemLog();
+        log.setLevel("INFO");
+        log.setType("UPLOAD");
+        log.setUserId(userId);
+        log.setUsername(username);
+        log.setMessage(message);
+        log.setDetails(details);
+        return log;
+    }
+
+    public static SystemLog deleteLog(Long userId, String username, String message, String details) {
+        SystemLog log = new SystemLog();
+        log.setLevel("WARN");
+        log.setType("DELETE");
+        log.setUserId(userId);
+        log.setUsername(username);
+        log.setMessage(message);
+        log.setDetails(details);
+        return log;
+    }
+
+    public static SystemLog userManagementLog(Long operatorId, String operatorName,
+                                               String action, String targetUser, String details) {
+        SystemLog log = new SystemLog();
+        log.setLevel("INFO");
+        log.setType("USER_MGMT");
+        log.setUserId(operatorId);
+        log.setUsername(operatorName);
+        log.setMessage(action + ": " + targetUser);
+        log.setDetails(details);
+        return log;
+    }
 }

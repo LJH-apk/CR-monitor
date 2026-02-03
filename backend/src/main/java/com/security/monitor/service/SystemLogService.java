@@ -65,6 +65,25 @@ public class SystemLogService {
         saveLogAsync(log);
     }
 
+    @Async
+    public void logUpload(Long userId, String username, String message, String details) {
+        SystemLog log = SystemLog.uploadLog(userId, username, message, details);
+        saveLogAsync(log);
+    }
+
+    @Async
+    public void logDelete(Long userId, String username, String message, String details) {
+        SystemLog log = SystemLog.deleteLog(userId, username, message, details);
+        saveLogAsync(log);
+    }
+
+    @Async
+    public void logUserManagement(Long operatorId, String operatorName,
+                                   String action, String targetUser, String details) {
+        SystemLog log = SystemLog.userManagementLog(operatorId, operatorName, action, targetUser, details);
+        saveLogAsync(log);
+    }
+
     public Page<SystemLogDTO> getLogs(String level, String type, Long userId,
                                        LocalDateTime startTime, LocalDateTime endTime,
                                        String keyword, Pageable pageable) {

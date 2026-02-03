@@ -4,6 +4,7 @@ import com.security.monitor.dto.CreateUserRequest;
 import com.security.monitor.dto.UpdateUserRequest;
 import com.security.monitor.dto.UserDTO;
 import com.security.monitor.service.UserManagementService;
+import com.security.monitor.service.SystemLogService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,9 @@ public class UserManagementController {
 
     @Autowired
     private UserManagementService userManagementService;
+
+    @Autowired
+    private SystemLogService systemLogService;
 
     /**
      * 获取用户列表（分页）
@@ -77,6 +81,11 @@ public class UserManagementController {
     public ResponseEntity<UserDTO> createUser(@Valid @RequestBody CreateUserRequest request) {
         try {
             UserDTO user = userManagementService.createUser(request);
+            // 记录用户创建日志
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            systemLogService.logUserManagement(null, auth.getName(),
+                    "创建用户", request.getUsername(),
+                    String.format("角色: %s, 邮箱: %s", request.getRole(), request.getEmail()));
             return ResponseEntity.ok(user);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -92,6 +101,11 @@ public class UserManagementController {
             @Valid @RequestBody UpdateUserRequest request) {
         try {
             UserDTO user = userManagementService.updateUser(id, request);
+            // 记录用户更新日志
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            systemLogService.logUserManagement(null, auth.getName(),
+                    "更新用户", user.getUsername(),
+                    String.format("用户ID: %d", id));
             return ResponseEntity.ok(user);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -104,7 +118,14 @@ public class UserManagementController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         try {
+            // 先获取用户信息用于日志记录
+            UserDTO userToDelete = userManagementService.getUserById(id).orElse(null);
             userManagementService.deleteUser(id);
+            // 记录用户删除日志
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            systemLogService.logUserManagement(null, auth.getName(),
+                    "删除用户", userToDelete != null ? userToDelete.getUsername() : "ID:" + id,
+                    String.format("用户ID: %d", id));
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -124,6 +145,11 @@ public class UserManagementController {
                 return ResponseEntity.badRequest().build();
             }
             UserDTO user = userManagementService.updateUserRole(id, role);
+            // 记录角色变更日志
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            systemLogService.logUserManagement(null, auth.getName(),
+                    "修改用户角色", user.getUsername(),
+                    String.format("用户ID: %d, 新角色: %s", id, role));
             return ResponseEntity.ok(user);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

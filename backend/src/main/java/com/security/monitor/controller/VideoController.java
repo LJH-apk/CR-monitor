@@ -63,6 +63,12 @@ public class VideoController {
     @Autowired
     private com.security.monitor.repository.AlertRepository alertRepository;
 
+    @Autowired
+    private com.security.monitor.service.SystemLogService systemLogService;
+
+    @Autowired
+    private com.security.monitor.repository.UserRepository userRepository;
+
     @Value("${storage.uploads}")
     private String uploadsPath;
 
@@ -182,6 +188,12 @@ public class VideoController {
 
             video = videoRepository.save(video);
 
+            // 记录上传日志
+            String username = userRepository.findById(userId).map(u -> u.getUsername()).orElse("unknown");
+            systemLogService.logUpload(userId, username,
+                    "上传视频: " + originalFilename,
+                    String.format("视频ID: %d, 文件大小: %.2fMB", video.getId(), file.getSize() / 1024.0 / 1024.0));
+
             logger.info("Video uploaded successfully: {}", video.getId());
 
             // Start transcoding asynchronously
@@ -252,6 +264,12 @@ public class VideoController {
         // 删除视频文件和数据库记录
         videoRepository.findById(id).ifPresent(video -> {
             try {
+                // 记录删除日志
+                String username = userRepository.findById(userId).map(u -> u.getUsername()).orElse("unknown");
+                systemLogService.logDelete(userId, username,
+                        "删除视频: " + video.getOriginalFilename(),
+                        String.format("视频ID: %d, 原始文件: %s", video.getId(), video.getOriginalPath()));
+
                 // 删除原始文件
                 File originalFile = new File(video.getOriginalPath());
                 if (originalFile.exists()) {

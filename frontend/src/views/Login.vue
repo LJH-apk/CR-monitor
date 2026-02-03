@@ -47,7 +47,7 @@
     </el-card>
 
     <div class="copyright">
-      <p>© 2026 智能监控系统 版权所有 刘佳航 V0.3.0</p>
+      <p>© 2026 智能监控系统 版权所有 刘佳航 V1.5.3</p>
       <p class="icp-info">
         <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">京ICP备XXXXXXXX号-1</a>
       </p>

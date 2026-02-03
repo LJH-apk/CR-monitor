@@ -6,6 +6,7 @@
 ![Java](https://img.shields.io/badge/Java-17-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.1-brightgreen.svg)
 ![Vue](https://img.shields.io/badge/Vue-3-green.svg)
+![Version](https://img.shields.io/badge/Version-1.5.3-purple.svg)
 
 基于 AI 的全栈视频监控平台，具备实时危险检测和智能预警功能
 
@@ -39,8 +40,10 @@
 - ⚡ **实时预警**：基于 WebSocket 的毫秒级预警推送
 - 🎬 **视频转码**：自动将上传视频转换为 HLS 流媒体格式
 - 📊 **数据可视化**：直观的图表展示预警统计数据
-- 🔐 **权限管理**：三级权限体系（普通用户/管理员/超级管理员）
+- 🔐 **权限管理**：四级权限体系（普通用户/管理员/超级管理员/开发者）
 - 🎨 **现代 UI**：响应式设计，支持多种设备访问
+- 📺 **多路监控**：支持同时监控多路视频流（2x3 网格布局）
+- 📝 **系统日志**：完整的操作审计日志，记录所有关键操作
 
 ---
 
@@ -67,11 +70,27 @@
 - ✅ 历史预警查询
 - ✅ 预警统计分析
 
+### 多路监控
+- ✅ 2x3 网格布局，同时监控 6 路视频
+- ✅ 独立视频选择器
+- ✅ 实时状态指示（检测中/正常/异常）
+- ✅ 全局告警汇总面板
+- ✅ 各窗口独立预警显示
+
 ### 权限系统
-- ✅ 三级权限体系（USER/ADMIN/SUPER_ADMIN）
+- ✅ 四级权限体系（USER/ADMIN/SUPER_ADMIN/DEVELOPER）
 - ✅ 基于角色的访问控制（RBAC）
 - ✅ 用户账户管理
 - ✅ 角色权限分配
+
+### 系统日志
+- ✅ 登录/登出日志记录
+- ✅ 视频上传/删除操作日志
+- ✅ 用户创建/更新/删除日志
+- ✅ 角色变更日志
+- ✅ 错误日志记录
+- ✅ 日志查询与筛选（按级别、类型、时间范围）
+- ✅ 日志统计分析
 
 ### 训练样本管理
 - ✅ 图片样本上传（支持 JPG/PNG）
@@ -116,40 +135,133 @@
 
 ## 🏗 系统架构
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        前端层 (Vue 3)                        │
-│  Dashboard │ Video Player │ Alert Panel │ Admin Console    │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ HTTP/WebSocket
-┌─────────────────────────▼───────────────────────────────────┐
-│                    后端层 (Spring Boot)                      │
-│  Controller → Service → Repository → Entity                 │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-┌───────▼────┐   ┌────────▼────────┐   ┌───▼──────┐
-│   MySQL    │   │     Redis       │   │  FFmpeg  │
-│  数据持久化  │   │   缓存加速      │   │ 视频转码  │
-└────────────┘   └─────────────────┘   └──────────┘
-                          │
-                 ┌────────▼────────┐
-                 │   AI Service    │
-                 │ YOLO + Qwen-VL  │
-                 └─────────────────┘
+### 整体架构图
+
+```mermaid
+graph TB
+    subgraph Frontend["前端层 (Vue 3)"]
+        Dashboard[Dashboard 主控制台]
+        MultiMonitor[多路监控]
+        VideoPlayer[视频播放器]
+        AlertPanel[预警面板]
+        AdminConsole[管理后台]
+        SystemLogs[系统日志]
+    end
+
+    subgraph Backend["后端层 (Spring Boot)"]
+        Controller[REST Controller]
+        Service[Service 业务层]
+        Repository[Repository 数据层]
+        WebSocket[WebSocket Handler]
+        Security[Security Filter]
+    end
+
+    subgraph Storage["存储层"]
+        MySQL[(MySQL 数据库)]
+        Redis[(Redis 缓存)]
+        FileStorage[文件存储]
+    end
+
+    subgraph External["外部服务"]
+        FFmpeg[FFmpeg 转码]
+        AIService[AI Service]
+    end
+
+    Frontend -->|HTTP/WebSocket| Backend
+    Backend --> Storage
+    Backend --> External
+    AIService -->|YOLO + Qwen| Backend
 ```
 
 ### 视频处理流程
 
+```mermaid
+flowchart LR
+    A[上传视频] --> B[存储到本地]
+    B --> C[FFmpeg 转码]
+    C --> D[生成 HLS]
+    D --> E[AI 帧分析]
+    E --> F{检测到异常?}
+    F -->|是| G[生成预警]
+    F -->|否| H[标记正常]
+    G --> I[WebSocket 推送]
+    H --> I
+    I --> J[前端显示]
 ```
-上传视频 → 存储到本地 → FFmpeg 转码 → 生成 HLS
-                                        ↓
-                                   AI 帧分析
-                                        ↓
-                                   生成预警
-                                        ↓
-                              WebSocket 实时推送
+
+### 多路监控数据流
+
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant Frontend as 前端
+    participant WebSocket as WebSocket
+    participant Backend as 后端
+    participant AI as AI服务
+
+    User->>Frontend: 选择视频
+    Frontend->>Backend: 请求视频流
+    Backend-->>Frontend: 返回 HLS 地址
+    Frontend->>WebSocket: 建立连接
+
+    loop 实时检测
+        Frontend->>WebSocket: 发送播放进度
+        WebSocket->>Backend: 触发帧分析
+        Backend->>AI: 请求分析
+        AI-->>Backend: 返回结果
+        alt 检测到异常
+            Backend->>WebSocket: 推送预警
+            WebSocket-->>Frontend: 显示预警
+        else 无异常
+            Backend->>WebSocket: 推送正常状态
+            WebSocket-->>Frontend: 显示正常
+        end
+    end
+```
+
+### 权限体系
+
+```mermaid
+graph TD
+    subgraph Roles["角色权限"]
+        USER[普通用户 USER]
+        ADMIN[管理员 ADMIN]
+        SUPER_ADMIN[超级管理员 SUPER_ADMIN]
+        DEVELOPER[开发者 DEVELOPER]
+    end
+
+    subgraph Permissions["权限范围"]
+        P1[查看监控]
+        P2[上传样本]
+        P3[视频管理]
+        P4[配置管理]
+        P5[样本审核]
+        P6[用户管理]
+        P7[系统日志]
+        P8[开发调试]
+    end
+
+    USER --> P1
+    USER --> P2
+    ADMIN --> P1
+    ADMIN --> P2
+    ADMIN --> P3
+    ADMIN --> P4
+    ADMIN --> P5
+    SUPER_ADMIN --> P1
+    SUPER_ADMIN --> P2
+    SUPER_ADMIN --> P3
+    SUPER_ADMIN --> P4
+    SUPER_ADMIN --> P5
+    SUPER_ADMIN --> P6
+    DEVELOPER --> P1
+    DEVELOPER --> P2
+    DEVELOPER --> P3
+    DEVELOPER --> P4
+    DEVELOPER --> P5
+    DEVELOPER --> P6
+    DEVELOPER --> P7
+    DEVELOPER --> P8
 ```
 
 ---
@@ -277,6 +389,7 @@ AI 服务将在 `http://localhost:5001` 启动
 
 | 角色 | 用户名 | 密码 | 权限说明 |
 |------|--------|------|----------|
+| 开发者 | developer | admin123 | 所有权限，包括系统日志 |
 | 超级管理员 | admin | admin123 | 所有权限，包括用户管理 |
 | 管理员 | admin1 | admin123 | 视频管理、配置管理、样本审核 |
 | 普通用户 | user1 | admin123 | 查看监控、上传样本 |
@@ -311,15 +424,24 @@ Page/
 │   ├── src/
 │   │   ├── api/               # API 接口层
 │   │   ├── components/        # 可复用组件
+│   │   │   ├── VideoPlayer.vue    # 视频播放器
+│   │   │   ├── VideoCell.vue      # 多路监控单元格
+│   │   │   ├── AlertPanel.vue     # 预警面板
+│   │   │   └── AlertChart.vue     # 预警图表
 │   │   ├── composables/       # 组合式函数
+│   │   │   ├── useWebSocket.ts    # WebSocket 连接
+│   │   │   └── useMultiVideoState.ts  # 多路视频状态
 │   │   ├── router/            # 路由配置
 │   │   ├── store/             # Pinia 状态管理
 │   │   ├── types/             # TypeScript 类型定义
 │   │   └── views/             # 页面组件
-│   │       ├── Dashboard.vue  # 主控制台
-│   │       ├── Login.vue      # 登录页
-│   │       ├── Admin/         # 管理页面
-│   │       └── Samples/       # 样本管理
+│   │       ├── Dashboard.vue      # 主控制台
+│   │       ├── MultiMonitor.vue   # 多路监控
+│   │       ├── Login.vue          # 登录页
+│   │       ├── Admin/             # 管理页面
+│   │       ├── Developer/         # 开发者页面
+│   │       │   └── SystemLogs.vue # 系统日志
+│   │       └── Samples/           # 样本管理
 │   └── package.json
 │
 ├── ai-service/                 # Python AI 检测服务
@@ -346,7 +468,7 @@ Page/
 4. 选择视频文件（支持 MP4，最大 500MB）
 5. 等待上传和转码完成
 
-### 2. 查看监控
+### 2. 单路监控
 
 1. 返回主控制台（Dashboard）
 2. 在视频选择下拉框中选择视频
@@ -354,7 +476,24 @@ Page/
 4. 右侧预警面板显示检测到的异常行为
 5. 视频播放时会实时推送预警
 
-### 3. 配置系统
+### 3. 多路监控
+
+1. 点击主控制台右上角"多路监控"按钮
+2. 进入 2x3 网格布局的多路监控界面
+3. 在每个窗口的下拉框中选择不同的视频
+4. 每个窗口独立显示检测状态（检测中/正常/异常）
+5. 底部全局告警汇总面板显示所有窗口的预警信息
+
+### 4. 查看系统日志（仅开发者）
+
+1. 使用开发者账号登录
+2. 进入"管理后台" → "系统日志"
+3. 可按日志级别（INFO/WARN/ERROR）筛选
+4. 可按日志类型（LOGIN/LOGOUT/UPLOAD/DELETE/USER_MGMT）筛选
+5. 可按时间范围查询
+6. 查看日志统计信息
+
+### 5. 配置系统
 
 #### 配置危险行为
 1. 进入"管理后台" → "危险行为管理"
@@ -368,13 +507,13 @@ Page/
    - 时间窗口（秒）
    - 最大预警数量
 
-### 4. 用户管理（仅超级管理员）
+### 6. 用户管理（仅超级管理员/开发者）
 
 1. 进入"管理后台" → "用户管理"
 2. 可以创建、编辑、删除用户
 3. 可以修改用户角色
 
-### 5. 训练样本管理
+### 7. 训练样本管理
 
 #### 上传样本
 1. 点击"样本上传"按钮
@@ -439,6 +578,20 @@ PUT /api/alerts/{id}/acknowledge
 Authorization: Bearer <token>
 ```
 
+### 系统日志接口
+
+#### 获取日志列表
+```http
+GET /api/system-logs?page=0&size=20&level=INFO&type=LOGIN
+Authorization: Bearer <token>
+```
+
+#### 获取日志统计
+```http
+GET /api/system-logs/stats?hours=24
+Authorization: Bearer <token>
+```
+
 ### WebSocket 接口
 
 #### 连接预警推送
@@ -459,6 +612,16 @@ ws://localhost:8080/api/ws/alerts?token=<jwt-token>
     "description": "检测到异常行为: 打架",
     "severityLevel": 4
   }
+}
+```
+
+正常状态消息：
+```json
+{
+  "type": "normal",
+  "videoId": 1,
+  "analyzedFrames": 5,
+  "message": "检测周期内画面无异常"
 }
 ```
 
@@ -503,6 +666,12 @@ sudo systemctl start redis
 2. Vite 代理配置是否正确
 3. CORS 配置是否启用
 
+### Q6: 多路监控卡顿？
+**A**: 请检查：
+1. 网络带宽是否足够
+2. 浏览器是否支持硬件加速
+3. 尝试减少同时播放的视频数量
+
 ---
 
 ## 🔧 配置说明
@@ -510,8 +679,12 @@ sudo systemctl start redis
 ### 后端配置 (application.yml)
 
 ```yaml
-# 数据库配置
 spring:
+  application:
+    name: security-monitor
+    version: 1.5.3
+
+# 数据库配置
   datasource:
     url: jdbc:mysql://localhost:3306/security_monitor
     username: root
