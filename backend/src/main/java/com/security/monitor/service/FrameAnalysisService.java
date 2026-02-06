@@ -14,6 +14,7 @@ import com.security.monitor.repository.AlertStatisticRepository;
 import com.security.monitor.repository.AlertThresholdRepository;
 import com.security.monitor.repository.DangerBehaviorRepository;
 import com.security.monitor.repository.VideoRepository;
+import com.security.monitor.util.AlertUtil;
 import com.security.monitor.util.FrameExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -361,31 +362,7 @@ public class FrameAnalysisService {
     private void initializeKeywordMapping() {
         if (keywordToBehaviorMap.isEmpty()) {
             List<DangerBehavior> behaviors = dangerBehaviorRepository.findByIsActiveTrue();
-
-            // 简单的关键词映射（实际应该从数据库配置）
-            Map<String, String> keywordMap = new HashMap<>();
-            keywordMap.put("打架", "Fighting");
-            keywordMap.put("斗殴", "Fighting");
-            keywordMap.put("争执", "Fighting");
-            keywordMap.put("推搡", "Fighting");
-            keywordMap.put("拉扯", "Fighting");
-            keywordMap.put("冲突", "Fighting");
-            keywordMap.put("摔倒", "Falling");
-            keywordMap.put("晕倒", "Falling");
-            keywordMap.put("非法进入", "Intrusion");
-            keywordMap.put("翻越", "Intrusion");
-            keywordMap.put("吸烟", "Smoking");
-            keywordMap.put("烟火", "Fire");
-            keywordMap.put("明火", "Fire");
-
-            for (DangerBehavior behavior : behaviors) {
-                for (Map.Entry<String, String> entry : keywordMap.entrySet()) {
-                    if (behavior.getName().equalsIgnoreCase(entry.getValue())) {
-                        keywordToBehaviorMap.put(entry.getKey(), behavior);
-                    }
-                }
-            }
-
+            keywordToBehaviorMap = AlertUtil.buildKeywordBehaviorMap(behaviors);
             logger.info("初始化关键词映射，共 {} 个关键词", keywordToBehaviorMap.size());
         }
     }
@@ -398,41 +375,17 @@ public class FrameAnalysisService {
     }
 
     /**
-     * 映射严重等级（返回Integer：1=LOW, 2=MEDIUM, 3=HIGH）
+     * 映射严重等级
      */
     private Integer mapSeverity(String aiSeverity) {
-        switch (aiSeverity.toLowerCase()) {
-            case "high":
-                return 3;
-            case "medium":
-                return 2;
-            case "low":
-                return 1;
-            default:
-                return 2;  // 默认为MEDIUM
-        }
+        return AlertUtil.mapSeverity(aiSeverity);
     }
 
     /**
      * 构建预警描述
      */
     private String buildDescription(AIDetectionResult result, AIAlert aiAlert) {
-        StringBuilder desc = new StringBuilder();
-        desc.append("检测到异常行为: ").append(aiAlert.getKeyword());
-
-        if (result.getAnalysis() != null && result.getAnalysis().getAnalysis() != null) {
-            String analysis = result.getAnalysis().getAnalysis();
-            if (analysis.length() > 100) {
-                analysis = analysis.substring(0, 100) + "...";
-            }
-            desc.append("\n分析: ").append(analysis);
-        }
-
-        desc.append("\n类别: ").append(aiAlert.getCategory());
-        desc.append("\n严重等级: ").append(aiAlert.getSeverity());
-        desc.append(String.format("\n置信度: %.2f%%", aiAlert.getCombinedScore() * 100));
-
-        return desc.toString();
+        return AlertUtil.buildDescription(result, aiAlert);
     }
 
     private boolean canCreateAlert(Long behaviorId, AlertThreshold threshold) {

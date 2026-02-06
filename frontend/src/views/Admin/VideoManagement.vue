@@ -1,25 +1,6 @@
 <template>
   <div class="admin-container">
-    <el-page-header @back="goBack" title="返回">
-      <template #content>
-        <span class="page-title">管理后台</span>
-      </template>
-    </el-page-header>
-
-    <!-- 导航菜单 -->
-    <el-menu
-      :default-active="'/admin/videos'"
-      mode="horizontal"
-      :router="true"
-      class="admin-menu"
-    >
-      <el-menu-item index="/admin/videos">视频管理</el-menu-item>
-      <el-menu-item index="/admin/behaviors">危险行为管理</el-menu-item>
-      <el-menu-item index="/admin/thresholds">告警阈值配置</el-menu-item>
-      <el-menu-item index="/admin/models">模型管理</el-menu-item>
-      <el-menu-item v-if="authStore.isSuperAdmin() || authStore.isDeveloper()" index="/admin/users">用户管理</el-menu-item>
-      <el-menu-item v-if="authStore.isDeveloper()" index="/developer/logs">系统日志</el-menu-item>
-    </el-menu>
+    <AdminMenu activeRoute="/admin/videos" />
 
     <el-card class="upload-card">
       <el-upload
@@ -101,27 +82,20 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { useVideoStore } from '@/store/modules/video'
-import { useAuthStore } from '@/store/modules/auth'
 import { useUploadQueue } from '@/composables/useUploadQueue'
 import UploadQueue from '@/components/UploadQueue.vue'
+import AdminMenu from '@/components/AdminMenu.vue'
 
-const router = useRouter()
 const videoStore = useVideoStore()
-const authStore = useAuthStore()
 const uploadQueue = useUploadQueue()
 
 onMounted(() => {
   videoStore.fetchVideos()
 })
-
-const goBack = () => {
-  router.push('/dashboard')
-}
 
 const beforeUpload = (file: File) => {
   const isVideo = file.type.startsWith('video/')
@@ -202,12 +176,6 @@ const formatFileSize = (bytes: number) => {
 .page-title {
   font-size: 18px;
   font-weight: 600;
-}
-
-.admin-menu {
-  margin: 20px 0;
-  background: white;
-  border-radius: 4px;
 }
 
 .upload-card {

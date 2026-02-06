@@ -133,14 +133,6 @@ class QwenAnalyzer:
             confidence = 0.5
 
         # 构造提示词（简洁模式：30-50字输出）
-        # 原提示词（已注释，用于回滚）
-        # prtmpt_location = f'你的位置是{self.default_location},当前时间为{time_str}。'
-        # prtmpt_principle = '请仔细分析这个人在车站环境中的行为，只有明确看到异常、危险或可疑行为时才报告。'
-        # prtmpt_attention = f'请仔细关注图中坐标为xy坐标分别为{x},{y}，高度和宽度为{h},{w}区域内的{label}。'
-        # prtmpt_restult = '如果行为正常，请回答"情况正常"；若出现异常，请严格按照{时间，地点，情况，解决方案}输出json格式。'
-        # prtmpt_language = '使用中文回答。'
-
-        # 新提示词（简洁模式）
         prtmpt_principle = '请简洁分析图中人物的行为，只报告异常情况。'
         prtmpt_location = f'位置：{self.default_location}，时间：{time_str}。'
         prtmpt_attention = f'重点关注坐标({x},{y})区域的{label}。'
@@ -149,5 +141,5 @@ class QwenAnalyzer:
         prtmpt_language = '使用中文，简洁明了。'
 
         prompt = prtmpt_principle + prtmpt_location + prtmpt_attention + prtmpt_format + prtmpt_example + prtmpt_language
-        print(prompt)
+        logger.debug(prompt)
         return self.analyze_image(image_array, prompt)

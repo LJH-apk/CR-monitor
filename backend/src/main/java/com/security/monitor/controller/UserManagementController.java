@@ -5,6 +5,7 @@ import com.security.monitor.dto.UpdateUserRequest;
 import com.security.monitor.dto.UserDTO;
 import com.security.monitor.service.UserManagementService;
 import com.security.monitor.service.SystemLogService;
+import com.security.monitor.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,7 +86,7 @@ public class UserManagementController {
             UserDTO user = userManagementService.createUser(request);
             // 记录用户创建日志
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String ipAddress = getClientIpAddress(httpRequest);
+            String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
             systemLogService.logUserManagement(null, auth.getName(),
                     "创建用户", request.getUsername(),
@@ -109,7 +110,7 @@ public class UserManagementController {
             UserDTO user = userManagementService.updateUser(id, request);
             // 记录用户更新日志
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String ipAddress = getClientIpAddress(httpRequest);
+            String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
             systemLogService.logUserManagement(null, auth.getName(),
                     "更新用户", user.getUsername(),
@@ -132,7 +133,7 @@ public class UserManagementController {
             userManagementService.deleteUser(id);
             // 记录用户删除日志
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String ipAddress = getClientIpAddress(httpRequest);
+            String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
             systemLogService.logUserManagement(null, auth.getName(),
                     "删除用户", userToDelete != null ? userToDelete.getUsername() : "ID:" + id,
@@ -164,7 +165,7 @@ public class UserManagementController {
             UserDTO user = userManagementService.updateUserRole(id, role);
             // 记录角色变更日志
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String ipAddress = getClientIpAddress(httpRequest);
+            String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
             String userAgent = httpRequest.getHeader("User-Agent");
             systemLogService.logUserManagement(null, auth.getName(),
                     "修改用户角色", user.getUsername(),
@@ -176,15 +177,4 @@ public class UserManagementController {
         }
     }
 
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
-            return xRealIp;
-        }
-        return request.getRemoteAddr();
-    }
 }

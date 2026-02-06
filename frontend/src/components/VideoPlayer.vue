@@ -66,20 +66,13 @@ import { Warning, CircleCheck, Loading } from '@element-plus/icons-vue'
 import type { Alert } from '@/types/alert'
 import { useAuthStore } from '@/store/modules/auth'
 import type { DetectionSummary } from '@/api/video'
+import type { DetectionStatusMessage } from '@/composables/useWebSocket'
 
 interface ParsedAlert {
   behavior: string
   analysis?: string
   suggestion?: string
   category?: string
-}
-
-export interface DetectionStatusMessage {
-  type: 'alert' | 'normal'
-  videoId: number
-  analyzedFrames?: number
-  message?: string
-  alertData?: Alert
 }
 
 const props = defineProps<{

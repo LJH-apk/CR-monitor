@@ -5,6 +5,7 @@ import com.security.monitor.entity.Video;
 import com.security.monitor.repository.VideoRepository;
 import com.security.monitor.service.VideoProcessingService;
 import com.security.monitor.util.JwtUtil;
+import com.security.monitor.util.RequestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,7 +149,7 @@ public class VideoController {
         try {
             String token = authHeader.substring(7);
             Long userId = jwtUtil.extractUserId(token);
-            String ipAddress = getClientIpAddress(request);
+            String ipAddress = RequestUtil.getClientIpAddress(request);
             String userAgent = request.getHeader("User-Agent");
 
             // 安全：验证文件类型和大小
@@ -259,7 +260,7 @@ public class VideoController {
 
         String token = authHeader.substring(7);
         Long userId = jwtUtil.extractUserId(token);
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = RequestUtil.getClientIpAddress(request);
         String userAgent = request.getHeader("User-Agent");
 
         // 安全：验证用户是否拥有该视频
@@ -314,21 +315,6 @@ public class VideoController {
             }
         }
         directory.delete();
-    }
-
-    /**
-     * 获取客户端真实IP地址
-     */
-    private String getClientIpAddress(jakarta.servlet.http.HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
-            return xRealIp;
-        }
-        return request.getRemoteAddr();
     }
 
     @GetMapping("/{id}/analysis-progress")

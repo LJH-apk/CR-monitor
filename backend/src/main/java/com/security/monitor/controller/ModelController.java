@@ -1,6 +1,7 @@
 package com.security.monitor.controller;
 
 import com.security.monitor.service.SystemLogService;
+import com.security.monitor.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,7 +56,7 @@ public class ModelController {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                String ipAddress = getClientIpAddress(httpRequest);
+                String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
                 String userAgent = httpRequest.getHeader("User-Agent");
                 systemLogService.logConfig(null, auth.getName(),
                     "模型热替换", version,
@@ -79,7 +80,7 @@ public class ModelController {
             if (response.getStatusCode().is2xxSuccessful()) {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                 String version = request != null ? request.get("version") : "上一版本";
-                String ipAddress = getClientIpAddress(httpRequest);
+                String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
                 String userAgent = httpRequest.getHeader("User-Agent");
                 systemLogService.logConfig(null, auth.getName(),
                     "模型回滚", version != null ? version : "上一版本",
@@ -121,7 +122,7 @@ public class ModelController {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                String ipAddress = getClientIpAddress(httpRequest);
+                String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
                 String userAgent = httpRequest.getHeader("User-Agent");
                 systemLogService.logConfig(null, auth.getName(),
                     "启动模型训练", "增量训练",
@@ -145,7 +146,7 @@ public class ModelController {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                String ipAddress = getClientIpAddress(httpRequest);
+                String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
                 String userAgent = httpRequest.getHeader("User-Agent");
                 systemLogService.logConfig(null, auth.getName(),
                     "取消模型训练", "增量训练",
@@ -159,15 +160,4 @@ public class ModelController {
         }
     }
 
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
-            return xRealIp;
-        }
-        return request.getRemoteAddr();
-    }
 }

@@ -88,6 +88,7 @@ import { ElMessage } from 'element-plus'
 import { CircleCheck } from '@element-plus/icons-vue'
 import type { Alert } from '@/types/alert'
 import { useAlertStore } from '@/store/modules/alert'
+import type { DetectionStatusMessage } from '@/composables/useWebSocket'
 
 interface ParsedAlert {
   behavior: string
@@ -95,14 +96,6 @@ interface ParsedAlert {
   suggestion?: string
   category?: string
   severity?: string
-}
-
-export interface DetectionStatusMessage {
-  type: 'alert' | 'normal'
-  videoId: number
-  analyzedFrames?: number
-  message?: string
-  alertData?: Alert
 }
 
 const props = defineProps<{

@@ -169,7 +169,7 @@
 
       <!-- 底部备案信息 -->
       <div class="footer-info">
-        <span>© 2026 智能监控系统 V1.5.4 版权所有</span>
+        <span>© 2026 智能监控系统 V1.5.5 版权所有</span>
         <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">京ICP备XXXXXXXX号-1</a>
       </div>
     </el-main>

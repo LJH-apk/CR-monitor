@@ -1,7 +1,7 @@
 spring:
   application:
     name: security-monitor
-    version: 1.5.4
+    version: 1.5.5
 
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:security_monitor}

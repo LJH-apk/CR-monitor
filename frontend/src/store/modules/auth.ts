@@ -75,11 +75,6 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.role === 'DEVELOPER'
   }
 
-  // 检查是否是管理员或以上级别
-  function isAdminOrAbove() {
-    return ['ADMIN', 'SUPER_ADMIN', 'DEVELOPER'].includes(user.value?.role || '')
-  }
-
   return {
     user,
     token,
@@ -89,7 +84,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     isAdmin,
     isSuperAdmin,
-    isDeveloper,
-    isAdminOrAbove
+    isDeveloper
   }
 })

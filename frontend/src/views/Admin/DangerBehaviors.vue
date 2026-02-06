@@ -1,31 +1,13 @@
 <template>
   <div class="admin-container">
-    <el-page-header @back="goBack" title="返回">
-      <template #content>
-        <span class="page-title">管理后台</span>
-      </template>
-      <template #extra>
+    <AdminMenu activeRoute="/admin/behaviors">
+      <template #header-extra>
         <el-button type="primary" @click="showDialog = true">
           <el-icon><Plus /></el-icon>
           添加行为
         </el-button>
       </template>
-    </el-page-header>
-
-    <!-- 导航菜单 -->
-    <el-menu
-      :default-active="'/admin/behaviors'"
-      mode="horizontal"
-      :router="true"
-      class="admin-menu"
-    >
-      <el-menu-item index="/admin/videos">视频管理</el-menu-item>
-      <el-menu-item index="/admin/behaviors">危险行为管理</el-menu-item>
-      <el-menu-item index="/admin/thresholds">告警阈值配置</el-menu-item>
-      <el-menu-item index="/admin/models">模型管理</el-menu-item>
-      <el-menu-item v-if="authStore.isSuperAdmin() || authStore.isDeveloper()" index="/admin/users">用户管理</el-menu-item>
-      <el-menu-item v-if="authStore.isDeveloper()" index="/developer/logs">系统日志</el-menu-item>
-    </el-menu>
+    </AdminMenu>
 
     <el-card class="list-card">
       <el-table :data="configStore.dangerBehaviors" style="width: 100%">
@@ -97,16 +79,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useConfigStore } from '@/store/modules/config'
-import { useAuthStore } from '@/store/modules/auth'
+import AdminMenu from '@/components/AdminMenu.vue'
 import type { DangerBehavior } from '@/types/alert'
 
-const router = useRouter()
 const configStore = useConfigStore()
-const authStore = useAuthStore()
 
 const showDialog = ref(false)
 const editingId = ref<number | null>(null)
@@ -121,10 +100,6 @@ const form = reactive({
 onMounted(() => {
   configStore.fetchDangerBehaviors()
 })
-
-const goBack = () => {
-  router.push('/dashboard')
-}
 
 const handleEdit = (row: DangerBehavior) => {
   editingId.value = row.id
@@ -191,12 +166,6 @@ const resetForm = () => {
 .page-title {
   font-size: 18px;
   font-weight: 600;
-}
-
-.admin-menu {
-  margin: 20px 0;
-  background: white;
-  border-radius: 4px;
 }
 
 .list-card {

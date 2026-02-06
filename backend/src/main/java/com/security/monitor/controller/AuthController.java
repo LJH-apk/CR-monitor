@@ -5,6 +5,7 @@ import com.security.monitor.dto.LoginResponse;
 import com.security.monitor.service.AuthService;
 import com.security.monitor.service.SystemLogService;
 import com.security.monitor.util.JwtUtil;
+import com.security.monitor.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request,
                                                 HttpServletRequest httpRequest) {
-        String ipAddress = getClientIpAddress(httpRequest);
+        String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
 
         try {
@@ -64,21 +65,9 @@ public class AuthController {
         }
     }
 
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        return request.getRemoteAddr();
-    }
-
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest httpRequest) {
-        String ipAddress = getClientIpAddress(httpRequest);
+        String ipAddress = RequestUtil.getClientIpAddress(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
 
         // 从 Authorization header 获取用户信息

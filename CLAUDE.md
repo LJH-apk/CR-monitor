@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Intelligent Security Monitoring System** (v1.5.4) - A full-stack video surveillance platform with AI-powered danger detection and real-time alerting.
+**Intelligent Security Monitoring System** (v1.5.5) - A full-stack video surveillance platform with AI-powered danger detection and real-time alerting.
 
 This is a monorepo containing:
 - **Backend**: Spring Boot 3.2.1 REST API (Java 17)

@@ -6,7 +6,7 @@
 ![Java](https://img.shields.io/badge/Java-17-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.1-brightgreen.svg)
 ![Vue](https://img.shields.io/badge/Vue-3-green.svg)
-![Version](https://img.shields.io/badge/Version-1.5.4-purple.svg)
+![Version](https://img.shields.io/badge/Version-1.5.5-purple.svg)
 
 基于 AI 的全栈视频监控平台，具备实时危险检测和智能预警功能
 
@@ -765,3 +765,4 @@ Made with ❤️ by Liu Jiahang
 © 2026 版权所有
 
 </div>
+

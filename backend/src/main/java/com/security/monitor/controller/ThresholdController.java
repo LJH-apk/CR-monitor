@@ -4,6 +4,7 @@ import com.security.monitor.entity.AlertThreshold;
 import com.security.monitor.repository.AlertThresholdRepository;
 import com.security.monitor.service.CacheService;
 import com.security.monitor.service.SystemLogService;
+import com.security.monitor.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +55,7 @@ public class ThresholdController {
         AlertThreshold saved = thresholdRepository.save(threshold);
         invalidateCache(threshold.getDangerBehaviorId());
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = RequestUtil.getClientIpAddress(request);
         String userAgent = request.getHeader("User-Agent");
         systemLogService.logConfig(null, auth.getName(),
             "创建告警阈值", "行为ID:" + saved.getDangerBehaviorId(),
@@ -71,7 +72,7 @@ public class ThresholdController {
             @RequestBody AlertThreshold threshold,
             HttpServletRequest request) {
 
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = RequestUtil.getClientIpAddress(request);
         String userAgent = request.getHeader("User-Agent");
 
         return thresholdRepository.findById(id)
@@ -118,7 +119,7 @@ public class ThresholdController {
     public ResponseEntity<Void> deleteThreshold(@PathVariable Long id, HttpServletRequest request) {
         thresholdRepository.findById(id).ifPresent(threshold -> {
             Long behaviorId = threshold.getDangerBehaviorId();
-            String ipAddress = getClientIpAddress(request);
+            String ipAddress = RequestUtil.getClientIpAddress(request);
             String userAgent = request.getHeader("User-Agent");
             thresholdRepository.deleteById(id);
             invalidateCache(behaviorId);
@@ -136,15 +137,4 @@ public class ThresholdController {
         cacheService.delete("config:thresholds:" + behaviorId);
     }
 
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
-            return xRealIp;
-        }
-        return request.getRemoteAddr();
-    }
 }

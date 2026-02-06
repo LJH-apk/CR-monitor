@@ -5,8 +5,8 @@ class Config:
     # 应用版本
     VERSION = '1.0.0.0'
 
-    # 千问API密钥
-    DASHSCOPE_API_KEY = 'sk-6963e4b8bb5840de98983e63ed1ae012'
+    # 千问API密钥（从环境变量读取）
+    DASHSCOPE_API_KEY = os.environ.get('DASHSCOPE_API_KEY', '')
 
     # YOLO模型路径
     YOLO_MODEL_PATH = 'yolo26n.pt'
@@ -26,7 +26,7 @@ class Config:
     # 训练样本基础路径
     SAMPLES_BASE_PATH = os.environ.get(
         'SAMPLES_BASE_PATH',
-        '/Users/liujiahang/Page/backend/storage/training-samples'
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'backend', 'storage', 'training-samples')
     )
 
     # 训练配置

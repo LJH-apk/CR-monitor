@@ -12,10 +12,14 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/samples")
 public class TrainingSampleController {
+
+    private static final Logger logger = LoggerFactory.getLogger(TrainingSampleController.class);
 
     @Autowired
     private TrainingSampleService sampleService;
@@ -35,8 +39,7 @@ public class TrainingSampleController {
             SampleUploadResponse response = sampleService.uploadSample(file, userId);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Upload sample error: " + e.getMessage());
+            logger.error("Upload sample error: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }
